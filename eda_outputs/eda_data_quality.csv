@@ -1,0 +1,18 @@
+metric,value
+company rows,37440
+revenue rows,78347
+unique revenue companies,19305
+duplicate company IDs,0
+duplicate company-month revenue keys,0
+revenue companies absent from companies,0
+validated companies,25430
+activated companies,19370
+closed companies,3795
+closed without activation,2551
+activated companies with no revenue row,65
+negative banking-fee rows,28
+negative total-revenue rows,21
+first revenue month,2025-10-01
+last revenue month,2026-05-01
+first signup timestamp,2025-10-01 00:46:58.885
+last signup timestamp,2026-05-01 23:15:27.702
