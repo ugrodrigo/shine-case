@@ -11,6 +11,9 @@
 - `sql/cohort_playground.sql`: a short cohort query designed for editing.
 - `sql/streak_analysis.sql`: consecutive revenue-activity and loyalty analysis.
 - `sql/streak_playground.sql`: a short editable persona loyalty ranking.
+- `sql/revenue_concentration_analysis.sql`: top-10 and top-20 revenue
+  concentration, segment mix, and tenure-controlled sensitivities.
+- `sql/concentration_playground.sql`: editable top-20 segment query.
 - `sql/playground.sql`: a small query template intended for experimentation.
 - `run_eda.py`: rebuilds the database and exports the EDA result tables.
 - `run_query.py`: runs the playground or another SQL file.
@@ -19,6 +22,8 @@
   interview questions.
 - `STREAK_LOYALTY_FINDINGS.md`: whether streaks add information and which
   personas and plans have the strongest revenue continuity.
+- `REVENUE_CONCENTRATION_FINDINGS.md`: top-decile share, population coverage,
+  revenue types, segment mix, and tenure caveat.
 
 ## Run the full analysis
 
@@ -84,6 +89,7 @@ Detailed outputs are also available for:
 - Activation-cohort state matrices and state transitions at equal customer age.
 - Consecutive revenue-active streaks, strict continuous-activity shares, and
   next-month persistence after a streak has restarted.
+- Cumulative and tenure-controlled top-10 and top-20 revenue concentration.
 
 ## Run and adapt the cohort analysis
 

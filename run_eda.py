@@ -11,6 +11,7 @@ SQL_FILE = ROOT / "sql" / "shine_eda.sql"
 KPI_SQL_FILE = ROOT / "sql" / "kpi_deep_dive.sql"
 COHORT_SQL_FILE = ROOT / "sql" / "cohort_state_analysis.sql"
 STREAK_SQL_FILE = ROOT / "sql" / "streak_analysis.sql"
+CONCENTRATION_SQL_FILE = ROOT / "sql" / "revenue_concentration_analysis.sql"
 OUTPUT_DIR = ROOT / "eda_outputs"
 
 OUTPUT_TABLES = [
@@ -49,6 +50,23 @@ OUTPUT_TABLES = [
     "eda_cohort_streaks_by_segment",
     "eda_streak_next_month_persistence_by_segment",
     "eda_age3_streak_scorecard",
+    "eda_company_cumulative_revenue_rank",
+    "eda_top10_revenue_concentration_summary",
+    "eda_top10_revenue_companies_by_segment",
+    "eda_top10_revenue_by_type",
+    "eda_top10_revenue_by_activation_cohort",
+    "eda_company_age3_revenue_rank",
+    "eda_age3_top10_revenue_summary",
+    "eda_age3_top10_revenue_by_segment",
+    "eda_revenue_concentration_curve",
+    "eda_age3_revenue_concentration_curve",
+    "eda_revenue_pareto_threshold",
+    "eda_top20_revenue_concentration_summary",
+    "eda_top20_revenue_companies_by_segment",
+    "eda_top20_revenue_by_type",
+    "eda_top20_revenue_by_activation_cohort",
+    "eda_age3_top20_revenue_summary",
+    "eda_age3_top20_revenue_by_segment",
 ]
 
 
@@ -61,6 +79,7 @@ def main() -> None:
         connection.execute(KPI_SQL_FILE.read_text(encoding="utf-8"))
         connection.execute(COHORT_SQL_FILE.read_text(encoding="utf-8"))
         connection.execute(STREAK_SQL_FILE.read_text(encoding="utf-8"))
+        connection.execute(CONCENTRATION_SQL_FILE.read_text(encoding="utf-8"))
 
         for table in OUTPUT_TABLES:
             output_path = OUTPUT_DIR / f"{table}.csv"
