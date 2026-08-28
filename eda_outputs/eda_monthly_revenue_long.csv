@@ -1,33 +1,33 @@
-revenue_month,revenue_stream,revenue
-2025-10-01,Banking fees,19171.74
-2025-10-01,Deposit interest,4010.56
-2025-10-01,Interchange,11831.57
-2025-10-01,Subscription,591.01
-2025-11-01,Banking fees,29262.48
-2025-11-01,Deposit interest,30648.29
-2025-11-01,Interchange,43225.41
-2025-11-01,Subscription,20724.60
-2025-12-01,Banking fees,30915.64
-2025-12-01,Deposit interest,58393.16
-2025-12-01,Interchange,91128.73
-2025-12-01,Subscription,42659.87
-2026-01-01,Banking fees,28159.52
-2026-01-01,Deposit interest,88853.31
-2026-01-01,Interchange,135766.16
-2026-01-01,Subscription,66191.71
-2026-02-01,Banking fees,38172.00
-2026-02-01,Deposit interest,125495.64
-2026-02-01,Interchange,210471.23
-2026-02-01,Subscription,91984.12
-2026-03-01,Banking fees,53495.06
-2026-03-01,Deposit interest,161230.14
-2026-03-01,Interchange,215552.79
-2026-03-01,Subscription,114819.25
-2026-04-01,Banking fees,52530.12
-2026-04-01,Deposit interest,183401.48
-2026-04-01,Interchange,267904.45
-2026-04-01,Subscription,134241.55
-2026-05-01,Banking fees,47357.18
-2026-05-01,Deposit interest,195534.54
-2026-05-01,Interchange,280626.93
-2026-05-01,Subscription,145067.65
+revenue_month,analysis_status,revenue_stream,revenue
+2025-10-01,confirmed analysis,Banking fees,19171.74
+2025-10-01,confirmed analysis,Deposit interest,4010.56
+2025-10-01,confirmed analysis,Interchange,11831.57
+2025-10-01,confirmed analysis,Subscription,591.01
+2025-11-01,confirmed analysis,Banking fees,29262.48
+2025-11-01,confirmed analysis,Deposit interest,30648.29
+2025-11-01,confirmed analysis,Interchange,43225.41
+2025-11-01,confirmed analysis,Subscription,20724.60
+2025-12-01,confirmed analysis,Banking fees,30915.64
+2025-12-01,confirmed analysis,Deposit interest,58393.16
+2025-12-01,confirmed analysis,Interchange,91128.73
+2025-12-01,confirmed analysis,Subscription,42659.87
+2026-01-01,confirmed analysis,Banking fees,28159.52
+2026-01-01,confirmed analysis,Deposit interest,88853.31
+2026-01-01,confirmed analysis,Interchange,135766.16
+2026-01-01,confirmed analysis,Subscription,66191.71
+2026-02-01,confirmed analysis,Banking fees,38172.00
+2026-02-01,confirmed analysis,Deposit interest,125495.64
+2026-02-01,confirmed analysis,Interchange,210471.23
+2026-02-01,confirmed analysis,Subscription,91984.12
+2026-03-01,confirmed analysis,Banking fees,53495.06
+2026-03-01,confirmed analysis,Deposit interest,161230.14
+2026-03-01,confirmed analysis,Interchange,215552.79
+2026-03-01,confirmed analysis,Subscription,114819.25
+2026-04-01,confirmed analysis,Banking fees,52530.12
+2026-04-01,confirmed analysis,Deposit interest,183401.48
+2026-04-01,confirmed analysis,Interchange,267904.45
+2026-04-01,confirmed analysis,Subscription,134241.55
+2026-05-01,provisional sensitivity,Banking fees,47357.18
+2026-05-01,provisional sensitivity,Deposit interest,195534.54
+2026-05-01,provisional sensitivity,Interchange,280626.93
+2026-05-01,provisional sensitivity,Subscription,145067.65

@@ -55,6 +55,14 @@ SELECT
         + deposit_interest_revenue AS total_revenue
 FROM revenue;
 
+-- Centralize the analytical cutoff. May remains available for an explicit
+-- sensitivity/completeness check, but core findings stop at April.
+CREATE OR REPLACE TABLE analysis_parameters AS
+SELECT
+    DATE '2026-01-01' AS headline_start_month,
+    DATE '2026-04-01' AS confirmed_end_month,
+    DATE '2026-05-01' AS provisional_month;
+
 -- ============================================================
 -- 2. DATA-QUALITY SUMMARY
 -- ============================================================
@@ -121,12 +129,14 @@ WHERE c.activation_date IS NOT NULL
   AND r.company_profile_id IS NULL
 
 UNION ALL
-SELECT 'negative banking-fee rows', COUNT(*) FILTER (WHERE banking_fees < 0)::VARCHAR
+SELECT 'negative banking-fee rows through April', COUNT(*) FILTER (WHERE banking_fees < 0)::VARCHAR
 FROM revenue
+WHERE revenue_month <= (SELECT confirmed_end_month FROM analysis_parameters)
 
 UNION ALL
-SELECT 'negative total-revenue rows', COUNT(*) FILTER (WHERE total_revenue < 0)::VARCHAR
+SELECT 'negative total-revenue rows through April', COUNT(*) FILTER (WHERE total_revenue < 0)::VARCHAR
 FROM revenue_with_total
+WHERE revenue_month <= (SELECT confirmed_end_month FROM analysis_parameters)
 
 UNION ALL
 SELECT 'first revenue month', MIN(revenue_month)::VARCHAR
@@ -144,11 +154,49 @@ UNION ALL
 SELECT 'last signup timestamp', MAX(company_signup_at)::VARCHAR
 FROM companies;
 
+-- Keep the May question visible rather than silently assuming completeness.
+CREATE OR REPLACE TABLE eda_may_coverage_check AS
+SELECT 'May signup rows' AS metric,
+       COUNT(*) FILTER (
+           WHERE DATE_TRUNC('month', company_signup_at)::DATE
+                 = (SELECT provisional_month FROM analysis_parameters)
+       )::VARCHAR AS value
+FROM companies
+UNION ALL
+SELECT 'first May signup timestamp', MIN(company_signup_at)::VARCHAR
+FROM companies
+WHERE DATE_TRUNC('month', company_signup_at)::DATE
+      = (SELECT provisional_month FROM analysis_parameters)
+UNION ALL
+SELECT 'last May signup timestamp', MAX(company_signup_at)::VARCHAR
+FROM companies
+WHERE DATE_TRUNC('month', company_signup_at)::DATE
+      = (SELECT provisional_month FROM analysis_parameters)
+UNION ALL
+SELECT 'May revenue rows', COUNT(*)::VARCHAR
+FROM revenue
+WHERE revenue_month = (SELECT provisional_month FROM analysis_parameters)
+UNION ALL
+SELECT 'May revenue companies', COUNT(DISTINCT company_profile_id)::VARCHAR
+FROM revenue
+WHERE revenue_month = (SELECT provisional_month FROM analysis_parameters)
+UNION ALL
+SELECT 'May total revenue', ROUND(SUM(total_revenue), 2)::VARCHAR
+FROM revenue_with_total
+WHERE revenue_month = (SELECT provisional_month FROM analysis_parameters)
+UNION ALL
+SELECT 'latest validation date', MAX(validation_date)::VARCHAR FROM companies
+UNION ALL
+SELECT 'latest activation date', MAX(activation_date)::VARCHAR FROM companies
+UNION ALL
+SELECT 'latest closure date', MAX(closed_date)::VARCHAR FROM companies;
+
 -- ============================================================
 -- 3. SIGNUP-COHORT FUNNEL
 -- ============================================================
 -- These are eventual conversion rates within the available observation window.
--- Recent cohorts are right-censored and should not be compared naively.
+-- May signups are excluded because the source contains only 1 May. Recent
+-- cohorts are still right-censored and should not be compared naively.
 
 CREATE OR REPLACE TABLE eda_funnel_by_signup_month AS
 SELECT
@@ -168,6 +216,7 @@ SELECT
         1
     ) AS activation_rate_pct
 FROM companies
+WHERE company_signup_at::DATE < (SELECT provisional_month FROM analysis_parameters)
 GROUP BY 1
 ORDER BY 1;
 
@@ -198,6 +247,11 @@ with_growth AS (
 )
 SELECT
     revenue_month,
+    CASE
+        WHEN revenue_month <= (SELECT confirmed_end_month FROM analysis_parameters)
+            THEN 'confirmed analysis'
+        ELSE 'provisional sensitivity'
+    END AS analysis_status,
     revenue_companies,
     ROUND(subscription_revenue, 2) AS subscription_revenue,
     ROUND(interchange_revenue, 2) AS interchange_revenue,
@@ -221,34 +275,47 @@ SELECT
 FROM with_growth
 ORDER BY revenue_month;
 
--- Long-form table convenient for a stacked revenue chart.
+-- Long-form table convenient for a stacked revenue chart. Filter to
+-- analysis_status = 'confirmed analysis' for the headline chart.
 CREATE OR REPLACE TABLE eda_monthly_revenue_long AS
-SELECT revenue_month, 'Subscription' AS revenue_stream,
-       ROUND(SUM(subscription_revenue), 2) AS revenue
-FROM revenue
-GROUP BY revenue_month
-UNION ALL
-SELECT revenue_month, 'Interchange', ROUND(SUM(interchange_revenue), 2)
-FROM revenue
-GROUP BY revenue_month
-UNION ALL
-SELECT revenue_month, 'Banking fees', ROUND(SUM(banking_fees), 2)
-FROM revenue
-GROUP BY revenue_month
-UNION ALL
-SELECT revenue_month, 'Deposit interest', ROUND(SUM(deposit_interest_revenue), 2)
-FROM revenue
-GROUP BY revenue_month
+WITH long_data AS (
+    SELECT revenue_month, 'Subscription' AS revenue_stream,
+           ROUND(SUM(subscription_revenue), 2) AS revenue
+    FROM revenue
+    GROUP BY revenue_month
+    UNION ALL
+    SELECT revenue_month, 'Interchange', ROUND(SUM(interchange_revenue), 2)
+    FROM revenue
+    GROUP BY revenue_month
+    UNION ALL
+    SELECT revenue_month, 'Banking fees', ROUND(SUM(banking_fees), 2)
+    FROM revenue
+    GROUP BY revenue_month
+    UNION ALL
+    SELECT revenue_month, 'Deposit interest', ROUND(SUM(deposit_interest_revenue), 2)
+    FROM revenue
+    GROUP BY revenue_month
+)
+SELECT
+    revenue_month,
+    CASE
+        WHEN revenue_month <= (SELECT confirmed_end_month FROM analysis_parameters)
+            THEN 'confirmed analysis'
+        ELSE 'provisional sensitivity'
+    END AS analysis_status,
+    revenue_stream,
+    revenue
+FROM long_data
 ORDER BY revenue_month, revenue_stream;
 
 -- ============================================================
--- 5. MAY REVENUE BY PERSONA AND INITIAL PLAN
+-- 5. APRIL REVENUE BY PERSONA AND INITIAL PLAN
 -- ============================================================
--- May is used as the latest supplied revenue month. "Initial plan" must not be
--- interpreted as the plan held in May.
+-- April is the conservative confirmed cutoff. "Initial plan" must not be
+-- interpreted as the plan held in April.
 
-CREATE OR REPLACE TABLE eda_may_revenue_by_persona AS
-WITH may_company AS (
+CREATE OR REPLACE TABLE eda_april_revenue_by_persona AS
+WITH april_company AS (
     SELECT
         c.persona,
         r.company_profile_id,
@@ -259,7 +326,7 @@ WITH may_company AS (
         SUM(r.total_revenue) AS total_revenue
     FROM revenue_with_total r
     JOIN companies c USING (company_profile_id)
-    WHERE r.revenue_month = DATE '2026-05-01'
+    WHERE r.revenue_month = (SELECT confirmed_end_month FROM analysis_parameters)
     GROUP BY c.persona, r.company_profile_id
 ),
 persona AS (
@@ -273,7 +340,7 @@ persona AS (
         SUM(total_revenue) AS total_revenue,
         AVG(total_revenue) AS average_revenue_per_company,
         MEDIAN(total_revenue) AS median_revenue_per_company
-    FROM may_company
+    FROM april_company
     GROUP BY persona
 )
 SELECT
@@ -291,8 +358,8 @@ SELECT
 FROM persona
 ORDER BY total_revenue DESC;
 
-CREATE OR REPLACE TABLE eda_may_revenue_by_initial_plan AS
-WITH may_company AS (
+CREATE OR REPLACE TABLE eda_april_revenue_by_initial_plan AS
+WITH april_company AS (
     SELECT
         c.initial_subscription_group,
         r.company_profile_id,
@@ -303,7 +370,7 @@ WITH may_company AS (
         SUM(r.total_revenue) AS total_revenue
     FROM revenue_with_total r
     JOIN companies c USING (company_profile_id)
-    WHERE r.revenue_month = DATE '2026-05-01'
+    WHERE r.revenue_month = (SELECT confirmed_end_month FROM analysis_parameters)
     GROUP BY c.initial_subscription_group, r.company_profile_id
 )
 SELECT
@@ -318,7 +385,7 @@ SELECT
     ROUND(MEDIAN(total_revenue), 2) AS median_revenue_per_company,
     ROUND(100.0 * SUM(total_revenue) / SUM(SUM(total_revenue)) OVER (), 1)
         AS total_revenue_share_pct
-FROM may_company
+FROM april_company
 GROUP BY initial_subscription_group
 ORDER BY total_revenue DESC;
 
@@ -343,6 +410,7 @@ WITH company_month AS (
     FROM revenue_with_total r
     JOIN companies c USING (company_profile_id)
     WHERE c.activation_date IS NOT NULL
+      AND r.revenue_month <= (SELECT confirmed_end_month FROM analysis_parameters)
 )
 SELECT
     activation_month,
@@ -361,7 +429,7 @@ ORDER BY activation_month, revenue_month;
 -- ============================================================
 -- ASSUMPTION FOR THIS DIAGNOSTIC ONLY:
 -- Every activated company is expected to have a row from activation month
--- through closure month or May 2026, whichever comes first. This is a question
+-- through closure month or April 2026, whichever comes first. This is a question
 -- to validate, not a rule imposed on the final business metrics.
 
 CREATE OR REPLACE TABLE eda_missing_revenue_months AS
@@ -370,8 +438,11 @@ WITH lifecycle AS (
         company_profile_id,
         DATE_TRUNC('month', activation_date)::DATE AS activation_month,
         LEAST(
-            COALESCE(DATE_TRUNC('month', closed_date)::DATE, DATE '2026-05-01'),
-            DATE '2026-05-01'
+            COALESCE(
+                DATE_TRUNC('month', closed_date)::DATE,
+                (SELECT confirmed_end_month FROM analysis_parameters)
+            ),
+            (SELECT confirmed_end_month FROM analysis_parameters)
         ) AS end_month
     FROM companies
     WHERE activation_date IS NOT NULL
@@ -443,6 +514,7 @@ WITH company_revenue AS (
         SUM(deposit_interest_revenue) AS deposit_interest_revenue,
         SUM(total_revenue) AS total_revenue
     FROM revenue_with_total
+    WHERE revenue_month <= (SELECT confirmed_end_month FROM analysis_parameters)
     GROUP BY company_profile_id
 )
 SELECT
@@ -468,6 +540,7 @@ WITH company_components AS (
         SUM(deposit_interest_revenue) AS deposit_interest,
         SUM(total_revenue) AS total
     FROM revenue_with_total
+    WHERE revenue_month <= (SELECT confirmed_end_month FROM analysis_parameters)
     GROUP BY company_profile_id
 ),
 long_form AS (
@@ -520,4 +593,5 @@ SELECT
 FROM revenue_with_total r
 JOIN companies c USING (company_profile_id)
 WHERE r.banking_fees < 0
+  AND r.revenue_month <= (SELECT confirmed_end_month FROM analysis_parameters)
 ORDER BY r.banking_fees;

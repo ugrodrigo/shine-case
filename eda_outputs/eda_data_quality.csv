@@ -10,8 +10,8 @@ activated companies,19370
 closed companies,3795
 closed without activation,2551
 activated companies with no revenue row,65
-negative banking-fee rows,28
-negative total-revenue rows,21
+negative banking-fee rows through April,25
+negative total-revenue rows through April,18
 first revenue month,2025-10-01
 last revenue month,2026-05-01
 first signup timestamp,2025-10-01 00:46:58.885
