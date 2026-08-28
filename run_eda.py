@@ -12,6 +12,7 @@ KPI_SQL_FILE = ROOT / "sql" / "kpi_deep_dive.sql"
 COHORT_SQL_FILE = ROOT / "sql" / "cohort_state_analysis.sql"
 STREAK_SQL_FILE = ROOT / "sql" / "streak_analysis.sql"
 CONCENTRATION_SQL_FILE = ROOT / "sql" / "revenue_concentration_analysis.sql"
+PRESENTATION_SQL_FILE = ROOT / "sql" / "presentation_kpis.sql"
 OUTPUT_DIR = ROOT / "eda_outputs"
 
 OUTPUT_TABLES = [
@@ -67,6 +68,9 @@ OUTPUT_TABLES = [
     "eda_top20_revenue_by_activation_cohort",
     "eda_age3_top20_revenue_summary",
     "eda_age3_top20_revenue_by_segment",
+    "eda_company_account_health_at_cutoff",
+    "eda_account_health_by_segment",
+    "eda_top20_account_health_summary",
 ]
 
 
@@ -80,6 +84,7 @@ def main() -> None:
         connection.execute(COHORT_SQL_FILE.read_text(encoding="utf-8"))
         connection.execute(STREAK_SQL_FILE.read_text(encoding="utf-8"))
         connection.execute(CONCENTRATION_SQL_FILE.read_text(encoding="utf-8"))
+        connection.execute(PRESENTATION_SQL_FILE.read_text(encoding="utf-8"))
 
         for table in OUTPUT_TABLES:
             output_path = OUTPUT_DIR / f"{table}.csv"
