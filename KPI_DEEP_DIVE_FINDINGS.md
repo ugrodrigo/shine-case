@@ -8,14 +8,14 @@ core calculations and retained only as a provisional sensitivity check.
 | Requested metric | Definition used |
 |---|---|
 | Funnel dropout | A fixed 30-day signup outcome. Validation dropout means no validation within 30 days. Activation dropout means validated within 30 days but not activated within 30 days of signup. |
-| Churn rate | Activated companies closing during the month divided by activated, unclosed companies at the start of that month. |
-| Rejection rate | Pre-activation closure within 30 days divided by eligible signups. This is a proxy, not confirmed KYB rejection. |
+| Revenue lifecycle state | Active means revenue in the cutoff month; At-risk means one or two consecutive inactive months; Churned proxy means at least three inactive months. Thresholds are derived from observed return probabilities. |
+| Pre-activation closure | Closed within 30 days without activation, divided by eligible signups. This is a proxy, not confirmed KYB rejection. |
 | Revenue trends | Monthly recognized revenue through April, split into subscription, interchange, banking fees, and deposit interest. |
 | LTV trend | Cumulative observed revenue per original activated cohort member. Missing company-month revenue rows are treated as zero for this explicit proxy. It is not forecast lifetime value. |
 | New-company trend | New company-profile signups by signup month. It is not the same as new activated customers. |
 
-Thirty-day funnel calculations use signups through March 2026 so every included
-company has the same 30-day observation window by 30 April.
+`company_closed_date` is no longer used to define churn. Post-activation closures
+remain available as a separate descriptive output only.
 
 ## 1. Funnel dropout
 
@@ -27,11 +27,10 @@ Across 31,881 eligible signups from October through March:
 - Validation-to-activation dropout was 39.0% of validated companies.
 - Total signup-to-activation dropout was 62.9%.
 
-Total 30-day dropout was relatively stable by signup cohort, ranging from 61.5%
-to 64.0%. The first-stage validation dropout improved from 40.8% in October to
-37.4% in March, but post-validation activation dropout reached 41.3% in March.
-This suggests that the bottleneck may be shifting from validation toward the
-post-validation activation step.
+Total 30-day dropout was stable by signup cohort, ranging from 61.5% to 64.0%.
+First-stage validation dropout improved from 40.8% in October to 37.4% in
+March, but post-validation activation dropout reached 41.3% in March. The
+bottleneck may therefore be shifting toward the post-validation activation step.
 
 ### Initial-plan differences
 
@@ -42,70 +41,167 @@ post-validation activation step.
 | Plus | 4,261 | 62.0% | 43.8% | 32.4% |
 | Start | 13,196 | 59.6% | 40.1% | 32.6% |
 
-Business applicants have the largest total dropout, overwhelmingly at the
-validation stage. Free applicants validate more often but have the highest
-post-validation dropout.
+Business applicants have the largest dropout, overwhelmingly at validation.
+Free applicants validate more often but have the highest post-validation loss.
 
-### Persona differences
-
-- `Others`: 71.4% total dropout.
-- `Wholesale`: 69.4%.
-- `Bikers_Drivers`: 66.1%.
-- `BTP`: 64.7%.
-- `Consultant`: 56.5%.
-- `Media_Publishing`: 51.7%.
-- `Medical_Professionals`: 49.7%.
-
-Small personas should not be ranked without displaying their sample sizes.
+Large persona differences include `Others` at 71.4%, `Wholesale` at 69.4%,
+`Bikers_Drivers` at 66.1%, BTP at 64.7%, and Consultant at 56.5%. Small
+personas should not be ranked without displaying their sample sizes.
 
 ## 2. Pre-activation closure—not confirmed rejection
 
 Overall, 5.1% of eligible signups closed without activation within 30 days.
-This explains only a small part of the 62.9% total funnel dropout. Most dropout
-therefore represents pending, late, or abandoned journeys—or unobserved status
-reasons—not explicit pre-activation closure.
+This explains only a small part of the 62.9% total funnel dropout. Most funnel
+loss therefore represents pending, late, abandoned, or otherwise unobserved
+journeys—not explicit pre-activation closure.
 
-The strongest anomaly is `Others`:
-
-- 14.6% pre-activation closure rate.
-- The next-highest sufficiently sized persona is `Medical_Professionals` at
-  6.9%.
-- Initial-plan rates are much closer together, ranging from 4.2% to 5.7%.
+The strongest anomaly is `Others`, with a 14.6% pre-activation closure rate.
+The next-highest sufficiently sized persona is `Medical_Professionals` at 6.9%.
+Initial-plan rates are closer together, ranging from 4.2% to 5.7%.
 
 This should not be labelled a KYB rejection rate until the meaning of
 `company_closed_date` and the reason for closure are confirmed.
 
-## 3. Activated-company churn
+## 3. Companies that stop generating revenue
 
-Overall monthly logo churn declines as the customer population grows:
+Yes, companies disappear from the revenue table after previously producing
+revenue. However, some later return, so absence is not automatically churn.
 
-| Month | Active at start | Closed during month | Churn rate |
+### Empirical return probability
+
+Because revenue is monthly, 1/2/3 inactive months approximate 30/60/90 days.
+The cleanest comparable measure is return within the next two months, restricted
+to inactivity spells with the full two-month future window observable.
+
+| Already inactive for | Comparable spells | Return within next 2 months | Observed return lower bound by April |
 |---|---:|---:|---:|
-| November 2025 | 1,187 | 34 | 2.86% |
-| December 2025 | 3,571 | 87 | 2.44% |
-| January 2026 | 6,143 | 125 | 2.03% |
-| February 2026 | 8,752 | 169 | 1.93% |
-| March 2026 | 11,787 | 171 | 1.45% |
-| April 2026 | 14,031 | 237 | 1.69% |
+| 1 month | 744 | 13.4% | 10.3% |
+| 2 months | 381 | 8.1% | 4.2% |
+| 3 months | 142 | 4.9% | 2.5% |
+| 4 months | 30 | 0.0% | 0.9% |
 
-April churn by initial plan:
+Samples beyond four inactive months do not have enough fixed follow-up to
+estimate a reliable return probability. The sharp fall below 5% after three
+inactive months supports the following provisional states:
 
-- Business: 8.26%—19 closures from 230 starting accounts.
-- Plus: 2.49%.
-- Start: 1.55%.
-- Free: 1.33%.
+- **Active:** revenue in the current month—zero inactive months.
+- **At-risk:** one or two consecutive inactive months, approximately 30–60 days.
+- **Churned proxy:** three or more consecutive inactive months, approximately
+  90+ days.
 
-Business is repeatedly above the other plans, although its denominator is
-small. Because only the initial plan is available, this is not churn from the
-company’s confirmed plan at closure.
+As of April, among 17,568 companies that had ever generated revenue:
 
-Highest April persona rates with material but still limited denominators:
+| State | Companies | Share |
+|---|---:|---:|
+| Active | 16,130 | 91.81% |
+| At-risk | 810 | 4.61% |
+| Churned proxy | 628 | 3.57% |
 
-- Wholesale: 2.92%—10 of 342.
-- Bikers_Drivers: 2.39%—19 of 794.
-- Developer_IT: 2.19%—26 of 1,186.
-- BTP: 1.91%—48 of 2,519.
-- Consultant: 1.12%—28 of 2,503.
+“Churned proxy” remains recoverable: it means low empirical return probability,
+not proven account or customer loss. The threshold should be re-estimated when
+more months are available.
+
+State distribution by initial plan:
+
+| Initial plan | Active | At-risk | Churned proxy |
+|---|---:|---:|---:|
+| Business | 75.29% | 10.06% | 14.66% |
+| Plus | 89.26% | 5.28% | 5.46% |
+| Free | 91.81% | 4.98% | 3.21% |
+| Start | 93.29% | 3.84% | 2.87% |
+
+The strongest sufficiently sized persona-level churned-proxy shares are
+`Bikers_Drivers` at 8.53%, `Automobile_Trade_Repair` at 4.62%, Retail at 4.09%,
+`Others` at 3.65%, and BTP at 3.48%.
+
+### Monthly revenue-activity transitions
+
+| Current month | Prior revenue companies | Missing this month | Reactivated this month | One-month dropout |
+|---|---:|---:|---:|---:|
+| November 2025 | 1,193 | 41 | 0 | 3.44% |
+| December 2025 | 3,578 | 130 | 6 | 3.63% |
+| January 2026 | 6,149 | 262 | 18 | 4.26% |
+| February 2026 | 8,646 | 311 | 38 | 3.60% |
+| March 2026 | 11,595 | 435 | 32 | 3.75% |
+| April 2026 | 13,623 | 425 | 72 | 3.12% |
+
+April’s 425 disappearing companies had generated €7.7k in March, equivalent to
+1.42% of March revenue. The company dropout rate is higher than the associated
+revenue rate because disappearing companies tend to be lower-value.
+
+April gross revenue dropout by prior-month revenue type:
+
+- Subscription: 2.87%.
+- Banking fees: 1.64%.
+- Interchange: 1.20%.
+- Deposit interest: 0.61%.
+- Total revenue: 1.42%.
+
+### Supporting flow metric: confirmed two-month inactivity
+
+For reporting month `t`, the denominator is companies with revenue in `t-2`.
+The numerator is companies absent from both `t-1` and `t`. This avoids declaring
+churn after one missing row, although later reactivation is still possible.
+
+| Reporting month | Revenue companies two months earlier | Confirmed inactive | Inactivity rate | Associated revenue rate |
+|---|---:|---:|---:|---:|
+| December 2025 | 1,193 | 35 | 2.93% | 4.54% |
+| January 2026 | 3,578 | 117 | 3.27% | 3.43% |
+| February 2026 | 6,149 | 229 | 3.72% | 4.29% |
+| March 2026 | 8,646 | 291 | 3.37% | 1.72% |
+| April 2026 | 11,595 | 385 | 3.32% | 2.19% |
+
+The recommended working proxy is therefore:
+
+> April confirmed two-month revenue inactivity was 3.32% of companies and
+> represented 2.19% of the February revenue base.
+
+Call this a revenue-inactivity proxy, not customer churn, unless the source
+owner confirms that sustained zero revenue represents a lost customer.
+
+### Cumulative inactivity as of April
+
+As of April:
+
+- 1,438 companies had revenue previously but no April revenue row.
+- Among companies observable for the full window, 1,013 of 12,277—8.25%—had
+  been absent for at least two consecutive months.
+- 628 of 9,055—6.94%—had been absent for at least three months.
+- Of the 1,438 companies with no April revenue after earlier revenue, 778 had a
+  closure date by April and 660 did not. Closure overlaps with revenue
+  inactivity but does not define it.
+
+The presence of 72 April reactivations and 237 companies with internal revenue
+gaps is why a single missing month should not be called churn.
+
+The activation-cohort version of these states is documented in
+`COHORT_STATE_FINDINGS.md`. At the comparable age of three months, Active share
+is stable at 89.2%-90.3% across the October-January cohorts, while the
+Churned-proxy share ranges from 2.5%-3.4%.
+
+### Initial-plan differences
+
+| Initial plan | April one-month dropout | April confirmed two-month rate | Cumulative two-month inactivity |
+|---|---:|---:|---:|
+| Business | 8.33% | 7.80% | 26.17% |
+| Plus | 3.23% | 4.09% | 11.16% |
+| Free | 3.56% | 3.49% | 7.99% |
+| Start | 2.51% | 2.77% | 6.75% |
+
+Business remains the clearest inactivity risk, but its sample is small: 228
+companies had March revenue and only 256 were eligible for the two-month
+comparison. The grouping is also the initial plan, not necessarily the current
+plan.
+
+Highest April confirmed two-month persona signals include:
+
+- `Bikers_Drivers`: 6.34%—40 of 631 companies.
+- Retail: 4.15%—66 of 1,589.
+- `Automobile_Trade_Repair`: 3.92%—19 of 485.
+- Wholesale: 3.91%—11 of 281.
+- `Others`: 3.63%—67 of 1,845.
+- BTP: 3.07%—66 of 2,147.
+- Consultant: 2.57%—53 of 2,059.
 
 ## 4. Revenue trends and revenue type
 
@@ -124,75 +220,61 @@ April revenue mix:
 
 The mix differs by persona. In April, BTP revenue was 48.7% interchange, while
 Consultant revenue was 42.6% deposit interest. `Others` had a larger banking-fee
-share of 12.1%. This means each segment is exposed to different revenue risks.
+share of 12.1%, creating different risks by segment.
 
 ## 5. Observed LTV proxy
 
-Observed cumulative revenue continues growing with customer age. Examples:
+Observed cumulative revenue continues growing with customer age:
 
 - October cohort: €156.09 per activated company by age three and €289.02 by age
   six.
 - November cohort: €162.54 by age three and €254.37 by age five.
 
-At a comparable age of three months, more recent cohorts show lower observed
-value:
-
-| Activation cohort | Observed LTV at age 3 |
-|---|---:|
-| October 2025 | €156.09 |
-| November 2025 | €162.54 |
-| December 2025 | €145.76 |
-| January 2026 | €134.11 |
-
-Subscription contribution remains approximately €28–€30 at age three. The
-decline from November to January is instead associated with lower deposit
-interest, interchange, and banking-fee revenue. This may reflect cohort mix,
-seasonality, balances, or usage—not necessarily worsening customer quality.
+At the same age of three months, observed value declines from €162.54 for the
+November cohort to €145.76 for December and €134.11 for January. Subscription
+contribution remains approximately €28–€30. The decline is associated with
+lower deposit interest, interchange, and banking-fee revenue, which may reflect
+cohort mix, seasonality, balances, or usage rather than customer quality.
 
 Age-three observed LTV by initial plan:
 
-| Initial plan | Companies in comparable cohorts | Observed LTV at age 3 |
+| Initial plan | Comparable companies | Observed LTV at age 3 |
 |---|---:|---:|
 | Business | 196 | €477.44 |
 | Plus | 1,286 | €287.26 |
 | Start | 4,012 | €147.73 |
 | Free | 3,594 | €80.72 |
 
-Business and Plus are much more valuable, but the Business segment also has the
-highest funnel dropout and churn. This makes it a high-value, high-friction,
-high-risk segment rather than an automatic acquisition recommendation.
+Business and Plus are more valuable, but Business also has the highest funnel
+dropout and sustained revenue inactivity. It is a high-value, high-friction,
+high-inactivity segment rather than an automatic acquisition recommendation.
 
-Among personas with at least 100 companies in the age-three comparison:
-
-- BTP: €211.38.
-- Wholesale: €201.98.
-- Automobile_Trade_Repair: €190.77.
-- Restauration: €179.94.
-- Consultant: €137.04.
+Among personas with at least 100 companies at age three, BTP reaches €211.38,
+Wholesale €201.98, `Automobile_Trade_Repair` €190.77, Restauration €179.94, and
+Consultant €137.04.
 
 ## 6. New-company trends
 
-New profiles were broadly stable at 5.4k–5.6k per month from October through
-February. They fell to 4,209 in March—a 25.4% decline from February—then
-recovered to 5,312 in April, up 26.2% from March but still 5.8% below February.
+New profiles were stable at 5.4k–5.6k per month from October through February.
+They fell to 4,209 in March—a 25.4% decline from February—then recovered to
+5,312 in April, up 26.2% from March but still 5.8% below February.
 
-The March decline appears broad-based across personas and initial plans, rather
-than isolated to a single segment. This could be a real acquisition slowdown or
-calendar/campaign seasonality and requires channel and marketing-spend data to
-interpret.
+The March decline is broad-based across personas and initial plans rather than
+isolated to one segment. Channel and marketing-spend data are required to tell
+whether it reflects acquisition performance, calendar effects, or campaigns.
 
 ## Strongest combined interpretation
 
-Two segments deserve attention:
-
 1. **Business initial-plan customers:** highest observed value, but also 73.3%
-   funnel dropout and 8.26% April logo churn. Validate KYB friction, closure
-   meaning, and current-plan history before investing further in acquisition.
-2. **BTP:** largest April revenue persona, high age-three value, and meaningful
-   scale, but 64.7% funnel dropout and 1.91% April churn. This may offer a more
+   funnel dropout and 26.17% sustained two-month revenue inactivity. Validate
+   KYB friction, current-plan history, and what missing revenue rows mean before
+   investing further in acquisition.
+2. **BTP:** largest April revenue persona, high age-three value, meaningful
+   scale, and lower revenue inactivity than Business. This may offer a more
    scalable onboarding and product-adoption test.
+3. **Bikers_Drivers:** strongest material persona-level inactivity signal,
+   warranting investigation into product usage and revenue reactivation.
 
-The most immediate data-quality question is `Others`: its 14.6% pre-activation
-closure rate may point to a genuine funnel problem, a heterogeneous segment, or
-how personas are assigned to incomplete applications.
-
+The immediate data-quality question remains `Others`: its 14.6% pre-activation
+closure rate may indicate a genuine funnel problem, a heterogeneous category,
+or how personas are assigned to incomplete applications.

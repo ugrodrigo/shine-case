@@ -125,6 +125,14 @@ May contains 17,433 revenue rows and €668.6k of recorded revenue. Validations,
 activations, and closures continue through 28–29 May. This makes full-month
 revenue plausible, but only 247 signups are supplied and all occur on 1 May.
 
+Every company in the May revenue data exists in the supplied companies table.
+Of the 17,433 companies with May revenue, 17,350 signed up before May and 83
+signed up on 1 May. This means the recorded revenue is overwhelmingly from
+earlier cohorts, but it also creates a coverage risk: if companies that signed
+up after 1 May were omitted from the companies extract, their May revenue is
+necessarily absent as well. May may therefore be internally complete for the
+supplied company universe without being complete for the whole business.
+
 Until the extraction logic is confirmed, May should be shown only as:
 
 > Provisional sensitivity: revenue appears plausible, but signup coverage is

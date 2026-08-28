@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parent
 DATABASE = ROOT / "shine_case.duckdb"
 SQL_FILE = ROOT / "sql" / "shine_eda.sql"
 KPI_SQL_FILE = ROOT / "sql" / "kpi_deep_dive.sql"
+COHORT_SQL_FILE = ROOT / "sql" / "cohort_state_analysis.sql"
+STREAK_SQL_FILE = ROOT / "sql" / "streak_analysis.sql"
 OUTPUT_DIR = ROOT / "eda_outputs"
 
 OUTPUT_TABLES = [
@@ -27,10 +29,26 @@ OUTPUT_TABLES = [
     "eda_negative_banking_fees",
     "eda_new_companies_by_month_segment",
     "eda_funnel_30d_by_signup_month_segment",
-    "eda_churn_monthly_by_segment",
+    "eda_post_activation_closures_monthly_by_segment",
+    "eda_revenue_activity_transitions_by_segment",
+    "eda_revenue_dropout_by_segment_type",
+    "eda_sustained_revenue_inactivity_by_segment",
+    "eda_two_month_revenue_inactivity_by_segment",
+    "eda_revenue_return_probability_curve",
+    "eda_company_revenue_lifecycle_state",
+    "eda_revenue_lifecycle_state_by_segment",
+    "eda_revenue_lifecycle_state_by_segment_type",
     "eda_revenue_trends_by_segment_type",
     "eda_ltv_proxy_by_cohort_age_segment_type",
     "eda_segment_scorecard",
+    "eda_company_cohort_month_state",
+    "eda_cohort_state_distribution_by_segment",
+    "eda_cohort_state_matrix_by_segment",
+    "eda_cohort_state_transitions_by_segment",
+    "eda_company_revenue_streaks",
+    "eda_cohort_streaks_by_segment",
+    "eda_streak_next_month_persistence_by_segment",
+    "eda_age3_streak_scorecard",
 ]
 
 
@@ -41,6 +59,8 @@ def main() -> None:
     try:
         connection.execute(SQL_FILE.read_text(encoding="utf-8"))
         connection.execute(KPI_SQL_FILE.read_text(encoding="utf-8"))
+        connection.execute(COHORT_SQL_FILE.read_text(encoding="utf-8"))
+        connection.execute(STREAK_SQL_FILE.read_text(encoding="utf-8"))
 
         for table in OUTPUT_TABLES:
             output_path = OUTPUT_DIR / f"{table}.csv"
@@ -87,20 +107,53 @@ def main() -> None:
         ).fetchdf()
         print(funnel.to_string(index=False))
 
-        print("\nMonthly activated-company churn")
-        churn = connection.sql(
+        print("\nMonthly revenue-company activity transitions")
+        transitions = connection.sql(
             """
             SELECT
                 month_start,
-                active_at_start,
-                churned_during_month,
-                monthly_logo_churn_rate_pct
-            FROM eda_churn_monthly_by_segment
+                prior_revenue_companies,
+                revenue_company_dropouts,
+                reactivated_revenue_companies,
+                one_month_revenue_company_dropout_pct
+            FROM eda_revenue_activity_transitions_by_segment
             WHERE segment_level = 'overall'
             ORDER BY month_start
             """
         ).fetchdf()
-        print(churn.to_string(index=False))
+        print(transitions.to_string(index=False))
+
+        print("\nReturn probability after inactivity")
+        return_curve = connection.sql(
+            """
+            SELECT
+                inactive_months,
+                spells_with_2_month_followup,
+                return_within_next_2_months_pct
+            FROM eda_revenue_return_probability_curve
+            WHERE segment_level = 'overall'
+            ORDER BY inactive_months
+            """
+        ).fetchdf()
+        print(return_curve.to_string(index=False))
+
+        print("\nRevenue lifecycle states at the April cutoff")
+        states = connection.sql(
+            """
+            SELECT
+                revenue_lifecycle_state,
+                companies,
+                segment_company_share_pct
+            FROM eda_revenue_lifecycle_state_by_segment
+            WHERE segment_level = 'overall'
+            ORDER BY CASE revenue_lifecycle_state
+                WHEN 'Active' THEN 1
+                WHEN 'At-risk' THEN 2
+                ELSE 3
+            END
+            """
+        ).fetchdf()
+        print(states.to_string(index=False))
 
         print(f"\nDatabase: {DATABASE}")
         print(f"CSV outputs: {OUTPUT_DIR}")

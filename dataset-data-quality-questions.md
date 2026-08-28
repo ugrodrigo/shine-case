@@ -16,13 +16,13 @@ The main concerns are therefore not basic corruption, but coverage gaps and ambi
 
 ### 1. What are the cohort and observation windows?
 
-**Finding:** Signup data stops abruptly on 1 May 2026. All 247 May signups occurred on that date. However, validations, activations, and closures continue through 28–29 May, and May revenue is present. The files labelled “2026 YTD” also contain data from October–December 2025.
+**Finding:** Signup data stops abruptly on 1 May 2026. All 247 May signups occurred on that date. However, validations, activations, and closures continue through 28–29 May, and May revenue is present. All May revenue company IDs exist in the supplied companies table: 17,350 of the 17,433 May revenue companies signed up before May, while 83 signed up on 1 May. Consequently, if post–1 May signups were omitted from the companies extract, their revenue is absent too; the May revenue table may be complete for the supplied company universe without being complete for the whole business. The files labelled “2026 YTD” also contain data from October–December 2025.
 
 **Question:**
 
 > What are the intended cohort and observation windows? Is May revenue complete, and were companies deliberately restricted to signups through 1 May? Should October–December 2025 be treated as historical context or included in the analysis period?
 
-**Why it matters:** An incomplete May signup cohort or unclear cutoff would distort acquisition trends, conversion rates, cohort comparisons, and recent-customer maturity.
+**Why it matters:** An incomplete May signup cohort or unclear cutoff would distort acquisition trends, conversion rates, cohort comparisons, recent-customer maturity, and potentially total May revenue. April should remain the confirmed cutoff until the source owner confirms whether post–1 May signups and their revenue were intentionally excluded.
 
 ### 2. Does a missing revenue row mean zero revenue?
 
