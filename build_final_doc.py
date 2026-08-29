@@ -6,6 +6,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import pandas as pd
 from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.enum.table import WD_ALIGN_VERTICAL, WD_CELL_VERTICAL_ALIGNMENT
@@ -272,74 +273,261 @@ def make_concentration_chart(path: Path) -> None:
     plt.close(fig)
 
 
-def make_health_chart(path: Path) -> None:
-    labels = ["Healthy", "Recovered", "At-risk", "Churned proxy"]
-    values = [95.08, 0.54, 2.42, 1.96]
-    companies = [3341, 19, 85, 69]
-    colors = ["#2A9D8F", "#6AAED6", "#E9A23B", "#C95C3D"]
-    fig, (ax, detail) = plt.subplots(
+def make_segment_ranking_chart(path: Path) -> None:
+    from matplotlib.patches import Patch
+
+    ranking = pd.read_csv(
+        ROOT / "eda_outputs" / "eda_segment_opportunity_ranking.csv"
+    )
+    personas = (
+        ranking[ranking["segment_level"].eq("persona")]
+        .nsmallest(8, "revenue_opportunity_rank")
+        .sort_values("revenue_opportunity_rank")
+    )
+    plans = (
+        ranking[ranking["segment_level"].eq("initial_plan")]
+        .sort_values("revenue_opportunity_rank")
+    )
+
+    def bar_color(index: float) -> str:
+        if index >= 1.20:
+            return "#008C8C"
+        if index >= 0.80:
+            return "#6AAED6"
+        return "#B8C3CA"
+
+    def draw_panel(ax, frame, title, x_limit):
+        labels = []
+        for value in frame["segment_name"]:
+            label = str(value).replace("_", " ").title()
+            label = label.replace("Btp", "BTP").replace(" It", " IT")
+            labels.append(label)
+        values = frame["share_of_all_top_20pct_revenue_pct"].astype(float).tolist()
+        indexes = frame["company_representation_index"].astype(float).tolist()
+        populations = frame["eligible_companies"].astype(int).tolist()
+        colors = [bar_color(value) for value in indexes]
+        y = list(range(len(frame)))
+        bars = ax.barh(y, values, color=colors, height=0.62)
+        ax.set_yticks(y, labels, fontsize=6.8, color="#17212B")
+        ax.invert_yaxis()
+        ax.set_xlim(0, x_limit)
+        ax.set_xlabel("Share of high-value revenue", fontsize=6.7, color="#425466")
+        ax.tick_params(axis="x", labelsize=6.2, colors="#6B7780", length=0)
+        ax.tick_params(axis="y", length=0, pad=4)
+        ax.grid(axis="x", color="#E8EDF0", linewidth=0.55)
+        ax.set_axisbelow(True)
+        ax.set_title(title, loc="left", fontsize=8.8, fontweight="bold", color="#102A43", pad=4)
+        for bar, share, population, index in zip(bars, values, populations, indexes):
+            if share < 5:
+                ax.text(
+                    share + 0.5,
+                    bar.get_y() + bar.get_height() / 2,
+                    f"{share:.1f}%  |  N={population:,}  |  {index:.2f}×",
+                    ha="left",
+                    va="center",
+                    fontsize=6.2,
+                    color="#425466",
+                )
+            else:
+                ax.text(
+                    share - 0.8,
+                    bar.get_y() + bar.get_height() / 2,
+                    f"{share:.1f}%",
+                    ha="right",
+                    va="center",
+                    fontsize=6.5,
+                    fontweight="bold",
+                    color="white",
+                )
+                ax.text(
+                    share + 0.7,
+                    bar.get_y() + bar.get_height() / 2,
+                    f"N={population:,}  |  {index:.2f}×",
+                    ha="left",
+                    va="center",
+                    fontsize=6.2,
+                    color="#425466",
+                )
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+    fig, axes = plt.subplots(
         1,
         2,
-        figsize=(7.3, 1.55),
+        figsize=(7.3, 2.25),
         dpi=190,
-        gridspec_kw={"width_ratios": [1.05, 1.35]},
+        gridspec_kw={"width_ratios": [1.35, 1.0]},
     )
     fig.patch.set_facecolor("white")
-    comparison_labels = ["Healthy", "Other states"]
-    comparison_values = [95.08, 4.92]
-    comparison_colors = [colors[0], "#D7E0E5"]
-    bars = ax.bar(comparison_labels, comparison_values, color=comparison_colors, width=0.55)
-    ax.set_ylim(0, 105)
-    ax.set_ylabel("Share of top-20 companies", fontsize=7.2, color="#425466")
-    ax.tick_params(axis="x", labelsize=8, length=0)
-    ax.tick_params(axis="y", labelsize=6.7, colors="#6B7780", length=0)
-    ax.grid(axis="y", color="#E8EDF0", linewidth=0.6)
-    ax.set_axisbelow(True)
-    for bar, value in zip(bars, comparison_values):
-        ax.text(
-            bar.get_x() + bar.get_width() / 2,
-            value + 2,
-            f"{value:.1f}%",
-            ha="center",
-            va="bottom",
-            fontsize=9,
-            color="#102A43",
-            fontweight="bold",
-        )
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-
-    detail.axis("off")
-    detail.text(0.00, 0.96, "Exact state breakdown", fontsize=9, fontweight="bold",
-                color="#102A43", va="top")
-    detail.text(0.38, 0.79, "Companies", fontsize=7, fontweight="bold",
-                color="#5E6C76", ha="right")
-    detail.text(0.98, 0.79, "Share", fontsize=7, fontweight="bold",
-                color="#5E6C76", ha="right")
-    row_y = [0.64, 0.47, 0.30, 0.13]
-    for y_pos, label, company_count, value, color in zip(
-        row_y, labels, companies, values, colors
-    ):
-        detail.scatter([0.025], [y_pos], s=42, color=color, marker="s")
-        detail.text(0.07, y_pos, label, fontsize=7.8, color="#17212B", va="center")
-        detail.text(0.38, y_pos, f"{company_count:,}", fontsize=7.8,
-                    color="#17212B", va="center", ha="right")
-        detail.text(0.98, y_pos, f"{value:.2f}%", fontsize=7.8,
-                    color="#17212B", va="center", ha="right", fontweight="bold")
-    detail.set_xlim(0, 1)
-    detail.set_ylim(0, 1)
-
+    for ax in axes:
+        ax.set_facecolor("white")
+    draw_panel(axes[0], personas, "Persona ranking", 49)
+    draw_panel(axes[1], plans, "Initial-plan ranking", 61)
     fig.suptitle(
-        "Health of 3,514 cumulative top-20 revenue companies as of April",
+        "Revenue scale and efficiency point to different segment choices",
         x=0.01,
-        y=0.99,
+        y=0.98,
         ha="left",
-        fontsize=9.3,
+        fontsize=9.5,
         fontweight="bold",
         color="#102A43",
     )
-    plt.tight_layout(rect=[0, 0, 1, 0.91], pad=0.35)
-    fig.savefig(path, bbox_inches="tight", facecolor="white")
+    legend = [
+        Patch(facecolor="#008C8C", label="Overrepresented (≥1.2×)"),
+        Patch(facecolor="#6AAED6", label="Broadly proportional (0.8–1.2×)"),
+        Patch(facecolor="#B8C3CA", label="Underrepresented (<0.8×)"),
+    ]
+    fig.legend(
+        handles=legend,
+        ncol=3,
+        frameon=False,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.005),
+        fontsize=6.5,
+        handlelength=1.0,
+        columnspacing=1.2,
+    )
+    plt.tight_layout(rect=[0, 0.10, 1, 0.90], pad=0.45, w_pad=1.0)
+    fig.savefig(path, facecolor="white")
+    plt.close(fig)
+
+
+def make_health_chart(path: Path) -> None:
+    from matplotlib.patches import Patch
+
+    health = pd.read_csv(
+        ROOT / "eda_outputs" / "eda_comparable_account_health_by_segment.csv"
+    )
+    persona_names = [
+        "BTP",
+        "Consultant",
+        "Retail",
+        "Others",
+        "Automobile_Trade_Repair",
+        "Developer_IT",
+        "Bikers_Drivers",
+        "Wholesale",
+    ]
+    states = [
+        "Healthy revenue account",
+        "Watch - revenue declining",
+        "Recovered / monitor",
+        "At-risk",
+        "Churned proxy",
+        "Never monetized",
+    ]
+    state_labels = ["Healthy", "Watch", "Recovered", "At-risk", "Churned proxy", "Never monetized"]
+    colors = ["#2A9D8F", "#E9A23B", "#6AAED6", "#E07A3F", "#C95C3D", "#AAB7C0"]
+
+    def prepare(frame, segment_column, names):
+        subset = frame[frame[segment_column].isin(names)].copy()
+        pivot = subset.pivot_table(
+            index=segment_column,
+            columns="account_health_state",
+            values="comparable_segment_company_share_pct",
+            aggfunc="sum",
+            fill_value=0,
+        )
+        populations = subset.groupby(segment_column)["comparable_segment_companies"].max()
+        for state in states:
+            if state not in pivot.columns:
+                pivot[state] = 0.0
+        pivot = pivot[states]
+        signal = (
+            pivot["Watch - revenue declining"]
+            + pivot["At-risk"]
+            + pivot["Churned proxy"]
+        )
+        order = signal.sort_values(ascending=False).index
+        return pivot.loc[order], populations.loc[order], signal.loc[order]
+
+    def draw_stack(ax, pivot, populations, signal, title):
+        y = list(range(len(pivot)))
+        left = [0.0] * len(pivot)
+        for state, label, color in zip(states, state_labels, colors):
+            values = pivot[state].astype(float).tolist()
+            bars = ax.barh(y, values, left=left, color=color, height=0.68, label=label)
+            for bar, value, start in zip(bars, values, left):
+                if value >= 7.0:
+                    ax.text(
+                        start + value / 2,
+                        bar.get_y() + bar.get_height() / 2,
+                        f"{value:.0f}%",
+                        ha="center",
+                        va="center",
+                        fontsize=5.8,
+                        fontweight="bold",
+                        color="white" if state != "Watch - revenue declining" else "#543A00",
+                    )
+            left = [a + b for a, b in zip(left, values)]
+        labels = []
+        for value in pivot.index:
+            label = str(value).replace("_", " ").title()
+            label = label.replace("Btp", "BTP").replace(" It", " IT")
+            labels.append(label)
+        ax.set_yticks(y, labels, fontsize=6.5, color="#17212B")
+        ax.invert_yaxis()
+        ax.set_xlim(0, 119)
+        ax.set_xticks([0, 25, 50, 75, 100], ["0%", "25%", "50%", "75%", "100%"])
+        ax.tick_params(axis="x", labelsize=5.8, colors="#6B7780", length=0)
+        ax.tick_params(axis="y", length=0, pad=4)
+        ax.grid(axis="x", color="#E8EDF0", linewidth=0.5)
+        ax.set_axisbelow(True)
+        ax.set_title(title, loc="left", fontsize=8.2, fontweight="bold", color="#102A43", pad=2)
+        for yi, name in enumerate(pivot.index):
+            ax.text(
+                101.2,
+                yi,
+                f"Watch+inactive {signal[name]:.1f}%  |  N={int(populations[name]):,}",
+                va="center",
+                ha="left",
+                fontsize=5.7,
+                color="#425466",
+            )
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+    persona_frame = health[health["segment_level"].eq("persona")]
+    plan_frame = health[health["segment_level"].eq("initial_plan")]
+    persona_pivot, persona_n, persona_signal = prepare(persona_frame, "persona", persona_names)
+    plan_pivot, plan_n, plan_signal = prepare(
+        plan_frame,
+        "initial_subscription_group",
+        ["start", "plus", "free", "business"],
+    )
+
+    fig, axes = plt.subplots(
+        2,
+        1,
+        figsize=(7.3, 3.0),
+        dpi=190,
+        gridspec_kw={"height_ratios": [1.9, 1.0]},
+    )
+    fig.patch.set_facecolor("white")
+    draw_stack(axes[0], persona_pivot, persona_n, persona_signal, "Personas")
+    draw_stack(axes[1], plan_pivot, plan_n, plan_signal, "Initial plans")
+    fig.suptitle(
+        "Mature-company health exposes different weak and strong candidates",
+        x=0.01,
+        y=0.985,
+        ha="left",
+        fontsize=9.4,
+        fontweight="bold",
+        color="#102A43",
+    )
+    legend = [Patch(facecolor=color, label=label) for label, color in zip(state_labels, colors)]
+    fig.legend(
+        handles=legend,
+        ncol=6,
+        frameon=False,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.002),
+        fontsize=6.2,
+        handlelength=1.0,
+        columnspacing=0.9,
+    )
+    plt.tight_layout(rect=[0, 0.10, 1, 0.92], pad=0.4, h_pad=0.5)
+    fig.savefig(path, facecolor="white")
     plt.close(fig)
 
 
@@ -374,11 +562,11 @@ def configure_document(document: Document) -> None:
     document.core_properties.author = "Candidate analysis"
 
 
-def build_page_one(document: Document, concentration_chart: Path) -> None:
+def build_page_one(document: Document, ranking_chart: Path) -> None:
     add_page_title(
         document,
         "Page 1 • Position and magnitude",
-        "Shine’s best next-quarter bet is to replicate high-value BTP behavior",
+        "Segment rankings point to BTP and Plus—not one universal winner",
         "Confirmed analysis through April 2026 • May excluded because signup coverage is truncated",
     )
     add_callout(
@@ -393,7 +581,7 @@ def build_page_one(document: Document, concentration_chart: Path) -> None:
             ("20%", "highest-revenue companies"),
             ("70.2%", "revenue in 3 complete months"),
             ("30.3%", "high-value revenue from BTP"),
-            ("95.1%", "top-20 accounts Healthy"),
+            ("2.18×", "Plus representation in high value"),
         ],
     )
     p = document.add_paragraph()
@@ -401,7 +589,7 @@ def build_page_one(document: Document, concentration_chart: Path) -> None:
     p.paragraph_format.space_before = Pt(3)
     p.paragraph_format.space_after = Pt(1)
     run = p.add_run()
-    run.add_picture(str(concentration_chart), width=Cm(17.7))
+    run.add_picture(str(ranking_chart), width=Cm(17.7))
 
     method = document.add_table(rows=1, cols=1)
     method.autofit = False
@@ -432,23 +620,23 @@ def build_page_one(document: Document, concentration_chart: Path) -> None:
     set_cell_shading(opportunity, LIGHT_BLUE)
     set_cell_shading(risk, LIGHT_GREY)
     add_small_label(opportunity, "Opportunity", TEAL)
-    add_cell_text(opportunity, "BTP is 26.51% of the comparable top 20% and 30.28% of its revenue.", bold=True)
-    add_cell_text(opportunity, "Plus is 2.18× overrepresented; BTP + Plus is 2.44× represented.", size=8.2)
+    add_cell_text(opportunity, "BTP leads scalable persona value: 30.28% of high-value revenue and 1.47× represented.", bold=True)
+    add_cell_text(opportunity, "Plus combines scale with efficiency: 33.42% of high-value revenue and 2.18× represented.", size=8.2)
     add_small_label(risk, "Risk", RED)
-    add_cell_text(risk, "70.7% of April revenue comes from interchange and deposit interest.", bold=True)
-    add_cell_text(risk, "The raw top 20% generates ~80% of both streams, creating usage and balance dependence.", size=8.2)
+    add_cell_text(risk, "Business is 3.55× represented but has only 196 comparable companies.", bold=True)
+    add_cell_text(risk, "Start contributes the most high-value revenue (39.70%) but is proportional at 0.97×; scale and efficiency are different.", size=8.2)
     set_table_borders(table, color=WHITE, size="8")
 
-    add_heading(document, "Definitions and assumptions", level=2, space_before=3)
+    add_heading(document, "How to read the ranking", level=2, space_before=3)
     definitions = document.add_table(rows=2, cols=2)
     definitions.autofit = False
     definitions.columns[0].width = Cm(9.15)
     definitions.columns[1].width = Cm(9.15)
     text = [
-        ("Revenue-active", "revenue row in the observation month"),
-        ("Healthy revenue account", "Active with an unbroken revenue streak since activation"),
-        ("At-risk", "previously Active, then 1–2 missing revenue months"),
-        ("Churned proxy", "previously Active, then ≥3 missing months; not confirmed churn"),
+        ("Bar length", "share of all high-value revenue; this captures absolute scale"),
+        ("Bar color", "representation versus base; teal means at least 1.2×"),
+        ("N", "eligible companies with three complete post-activation months"),
+        ("No composite score", "leadership can see the scale-efficiency trade-off directly"),
     ]
     for idx, (name, definition) in enumerate(text):
         cell = definitions.cell(idx // 2, idx % 2)
@@ -465,8 +653,8 @@ def build_page_one(document: Document, concentration_chart: Path) -> None:
     add_run(p, "Decision: ", bold=True, color=TEAL, size=9.0)
     add_run(
         p,
-        "prioritize a controlled BTP adoption test; protect high-value companies at their first revenue gap. "
-        "This is a concentrated growth opportunity—not evidence of a broad churn crisis.",
+        "prioritize a controlled BTP adoption test, with Plus as the strongest plan signal. "
+        "Do not mistake Business efficiency or Start scale for a complete recommendation on its own.",
         size=9.0,
     )
 
@@ -479,7 +667,7 @@ def add_initiative_card(document, rank, title, why, magnitude, limit, fill):
         table.columns[idx].width = width
     cells = table.rows[0].cells
     for cell in cells:
-        set_cell_margins(cell, top=100, start=105, bottom=100, end=105)
+        set_cell_margins(cell, top=72, start=95, bottom=72, end=95)
         cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
     set_cell_shading(cells[0], fill)
     p = cells[0].paragraphs[0]
@@ -508,31 +696,31 @@ def build_page_two(document: Document, health_chart: Path) -> None:
         1,
         "BTP adoption & monetization experiment",
         "Replicate the product behaviors associated with high value; do not assume plan upsell is the lever.",
-        "1,642 comparable BTP companies; 482 already top 20%, leaving 1,160 outside. BTP contributes €233.6k / 30.28% of top-20 revenue across the first three complete months.",
+        "BTP contributes 30.28% of high-value revenue (N=1,642; 1.47×). In the mature BTP base (N=1,151), 71.07% are Healthy and 15.55% Watch.",
         "No current plan, product-use, cost, or margin data. Uplift cannot be sized in euros before a causal test.",
         TEAL,
     )
     add_initiative_card(
         document,
         2,
-        "First-gap protection for high-value companies",
-        "Trigger support after the first missing revenue month; keep recovered companies monitored.",
-        "85 top-20 companies At-risk + 69 Churned proxy. Last-observed monthly revenue exposure: €19.24k. Healthy / recovered pool generates ~€424k in April.",
-        "The current eligible risk pool is small and may require a phased rollout or broader pre-defined high-value band.",
+        "Revenue-decline & first-gap protection",
+        "Trigger diagnosis at a material revenue decline and support after the first missing month; monitor recoveries.",
+        "493 high-value accounts are Watch, with a €41.0k observed baseline-to-April gap. In the mature base, Business is only 46.15% Healthy and 43.36% inactive—but N=143.",
+        "The decline threshold is an analytical assumption, not causal loss. Product usage is missing, so diagnose the driver before outreach.",
         AMBER,
     )
 
-    add_heading(document, "Why blanket churn is not the lead bet", level=2, space_before=2)
+    add_heading(document, "Health by segment: activated by Dec 2025 (N=6,337)", level=2, space_before=2)
     p = document.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.space_after = Pt(1)
-    p.add_run().add_picture(str(health_chart), width=Cm(17.4))
+    p.add_run().add_picture(str(health_chart), width=Cm(15.5))
 
     add_heading(document, "Alternatives considered—and rejected", level=2, space_before=1)
     rows = [
         ("Acquire more Business", "High revenue/company", "Small base; 73.3% funnel dropout; weak continuity; no CAC or KYB-reason data."),
         ("Broad funnel overhaul", "62.9% 30-day dropout", "Cannot distinguish rejection, delay, abandonment, or extraction effects; no channel cost."),
-        ("Blanket churn campaign", "Retention feels urgent", "High-value pool is 95.08% Healthy; target the first gap instead."),
+        ("Blanket churn campaign", "Retention feels urgent", "A decline is not churn; target the 493 Watch and 154 inactive accounts with distinct treatments."),
         ("Immediate plan upsell", "Plus/Business correlate with value", "Only initial plan exists; current plan and causal plan effect are unknown."),
     ]
     table = document.add_table(rows=1, cols=3)
@@ -551,17 +739,20 @@ def build_page_two(document: Document, health_chart: Path) -> None:
         cells = table.add_row().cells
         prevent_row_split(table.rows[-1])
         for idx, value in enumerate(row_values):
-            set_cell_margins(cells[idx], top=65, start=90, bottom=65, end=90)
+            set_cell_margins(cells[idx], top=45, start=80, bottom=45, end=80)
             set_cell_shading(cells[idx], WHITE if len(table.rows) % 2 else LIGHT_GREY)
-            add_cell_text(cells[idx], value, bold=(idx == 0), size=7.65, color=NAVY if idx == 0 else BLACK, space_after=0)
+            add_cell_text(cells[idx], value, bold=(idx == 0), size=7.2, color=NAVY if idx == 0 else BLACK, space_after=0)
     set_table_borders(table, color="D8DEE3", size="3")
 
-    add_heading(document, "Magnitude: honest bounds", level=2, space_before=3)
-    add_body(
-        document,
-        "We can size populations and observed revenue, not incremental uplift. The dataset lacks product usage, current plan, treatment cost, margin, CAC, and a causal counterfactual. Rank 1 has the larger addressable pool; Rank 2 protects a smaller currently exposed pool.",
-        size=8.5,
-        space_after=0,
+    p = document.add_paragraph()
+    p.paragraph_format.space_before = Pt(2)
+    p.paragraph_format.space_after = Pt(0)
+    add_run(p, "Magnitude limit: ", bold=True, color=RED, size=7.7)
+    add_run(
+        p,
+        "populations and observed revenue can be sized; uplift, margin, CAC and causal impact cannot.",
+        size=7.7,
+        color=MID_GREY,
     )
 
 
@@ -670,7 +861,7 @@ def build_page_three(document: Document) -> None:
     p.paragraph_format.space_before = Pt(2)
     p.paragraph_format.space_after = Pt(0)
     add_run(p, "SQL appendix: ", bold=True, color=TEAL, size=7.7)
-    add_run(p, "sql/revenue_concentration_analysis.sql • sql/presentation_kpis.sql • sql/kpi_deep_dive.sql", size=7.7, color=MID_GREY)
+    add_run(p, "sql/revenue_concentration_analysis.sql • sql/presentation_kpis.sql • sql/account_health_playground.sql", size=7.7, color=MID_GREY)
     p = document.add_paragraph()
     p.paragraph_format.space_after = Pt(0)
     add_run(p, "Not concluded: ", bold=True, color=RED, size=7.7)
@@ -679,14 +870,14 @@ def build_page_three(document: Document) -> None:
 
 def build_document() -> Path:
     ASSET_DIR.mkdir(exist_ok=True)
-    concentration_chart = ASSET_DIR / "concentration_20_70.png"
-    health_chart = ASSET_DIR / "top20_health.png"
-    make_concentration_chart(concentration_chart)
+    ranking_chart = ASSET_DIR / "segment_opportunity_ranking.png"
+    health_chart = ASSET_DIR / "segment_health_stacked.png"
+    make_segment_ranking_chart(ranking_chart)
     make_health_chart(health_chart)
 
     document = Document()
     configure_document(document)
-    build_page_one(document, concentration_chart)
+    build_page_one(document, ranking_chart)
     document.add_page_break()
     build_page_two(document, health_chart)
     document.add_page_break()

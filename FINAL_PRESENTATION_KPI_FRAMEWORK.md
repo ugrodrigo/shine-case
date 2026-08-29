@@ -9,8 +9,9 @@
 
 The biggest immediate opportunity is to **protect and replicate Shine's
 high-value revenue behavior**, particularly among BTP and Plus companies. The
-main risk is concentration in a relatively small, usage- and balance-driven
-customer pool—not evidence of a broad current churn crisis.
+main risks are concentration in a relatively small, usage- and balance-driven
+pool and material revenue deterioration within some still-active accounts—not
+evidence of confirmed broad customer churn.
 
 Evidence:
 
@@ -24,9 +25,12 @@ Evidence:
 - Interchange and deposit interest make up **70.7%** of April revenue. In the raw
   cumulative top-20 analysis, this group generates 82.04% of interchange and
   80.24% of deposit-interest revenue.
-- High-value-account health is currently strong: **95.08%** of cumulative top-20
-  companies are Healthy under the strict unbroken-revenue-streak definition.
-  Only 2.42% are At-risk and 1.96% are Churned proxy.
+- Revenue continuity is strong but is not the same as economic health: 95.08%
+  of cumulative top-20 companies are active with no historical revenue gap.
+  Among the 2,124 with three prior complete months, however, **493 (23.21%)**
+  have April revenue at least 30% and EUR 10 below their trailing median.
+- Those 493 Watch accounts show an observed EUR 41.0k median-baseline-to-April
+  monthly revenue gap. This is an early-warning exposure, not forecast loss.
 - A broken streak still matters after recovery: restarted companies remain
   active next month 78.66% of the time versus 97.32% for continuously active
   companies at observed ages 2-4.
@@ -34,10 +38,10 @@ Evidence:
 The recommended action is therefore a targeted high-value growth and protection
 program, not a broad untargeted churn campaign:
 
-1. Protect the existing top-value population with a first-missing-revenue-month
-   trigger and continued monitoring after reactivation.
-2. Test deeper product adoption within large, high-potential segments—especially
+1. Test deeper product adoption within large, high-potential segments—especially
    BTP and Plus—using card usage, balances, and relevant paid features as levers.
+2. Protect the existing top-value population with a material-revenue-decline
+   diagnostic, first-missing-revenue-month trigger, and recovery monitoring.
 3. Measure incremental revenue and account health against a control group before
    scaling. Initial-plan associations do not prove that changing plans causes
    higher revenue.
@@ -60,8 +64,9 @@ Why this ranks first:
 - BTP + Plus is 2.44x represented in the high-value pool, while BTP + Start is
   its largest absolute combination. This suggests product behavior and initial
   proposition both matter, but does not establish which causes higher revenue.
-- BTP account continuity is reasonably strong, so the experiment targets growth
-  rather than trying to repair a broadly unhealthy segment.
+- BTP is both the main scalable opportunity and an early-warning hotspot: 150
+  of 515 assessable cumulative high-value BTP accounts are Watch (29.13%), with
+  an observed EUR 13.87k median-baseline-to-April monthly gap.
 
 Magnitude that can be stated:
 
@@ -79,11 +84,12 @@ Magnitude that cannot yet be stated:
 Those require current-plan and product-usage data, treatment cost, margin, and a
 causal experiment.
 
-### 2. First-gap protection for high-value companies
+### 2. Revenue-decline and first-gap protection for high-value companies
 
-Position: when a previously revenue-active high-value company first misses a
-month, trigger proactive support; keep recovered companies monitored for a fixed
-period.
+Position: diagnose a high-value account when revenue falls materially, trigger
+proactive support after the first missing month, and keep recovered accounts
+monitored for a fixed period. A decline signal should initiate diagnosis, not
+automatic outreach, because product-usage drivers are absent.
 
 Why this ranks second:
 
@@ -91,19 +97,23 @@ Why this ranks second:
   three, so the first gap is the practical intervention window.
 - A recovered company remains active next month only 78.66% of the time versus
   97.32% for a continuously active company.
-- Protecting the pool matters because Healthy and Recovered top-20 companies
-  generate approximately EUR 424.0k of April revenue.
+- **493 of 2,124 assessable high-value continuously active accounts (23.21%)**
+  are already Watch before a revenue gap. Their April revenue is EUR 29.8k
+  versus a summed trailing-median baseline of EUR 70.8k, an observed EUR 41.0k
+  monthly gap.
 
 Why it is second rather than first:
 
-- Only 154 cumulative top-20 companies are currently inactive: 85 At-risk and
-  69 Churned proxy.
+- The Watch threshold is an assumption: April revenue at least 30% and EUR 10
+  below the median of three prior complete calendar months. Sensitivities range
+  from 17.98% at a 40% threshold to 27.87% at a 20% threshold.
+- Another 154 cumulative top-20 companies are currently inactive: 85 At-risk
+  and 69 Churned proxy.
 - Their combined last-observed monthly revenue is EUR 19.24k, approximately 3%
   of April company revenue. This is an exposure proxy, not expected recoverable
   revenue.
-- The currently eligible treatment population may be too small for a fast,
-  well-powered top-20-only experiment. A phased rollout or a broader pre-defined
-  high-value band may be necessary.
+- The dataset cannot show whether falling card activity, balances, transactions,
+  or another product behavior caused the revenue decline.
 
 ## Alternatives considered and rejected
 
@@ -111,7 +121,7 @@ Why it is second rather than first:
 |---|---|---|
 | Acquire more Business companies | Highest revenue per company and strongest high-value representation | Only 196 comparable companies with three complete months; 73.3% funnel dropout and weak continuity. No CAC, channel, KYB-reason, or current-plan data. |
 | Broad funnel overhaul | 62.9% fixed-window signup-to-activation dropout appears large | Only 5.1% is observed pre-activation closure; the rest cannot be separated into rejection, delay, abandonment, or extraction effects. No channel cost or application-reason data. |
-| Blanket churn campaign | Retention is intuitively important | The high-value pool is 95.08% Healthy, and current inactive high-value exposure is smaller than the growth pool. A targeted first-gap program is more proportionate. |
+| Blanket churn campaign | Retention is intuitively important | Revenue decline is not churn. Treat the 493 Watch and 154 inactive accounts as separate populations with different diagnostics and interventions. |
 | Immediate plan-upsell campaign | Plus and Business are strongly associated with value | Only initial plan is available. Current plan, upgrades, eligibility, price exposure, and causal plan effects are unknown. |
 | Bikers Drivers as the lead growth segment | It has the clearest material inactivity signal | It is underrepresented in the high-value pool and has weaker continuity. It is better suited to a diagnostic retention study than the lead revenue-growth bet. |
 
@@ -127,7 +137,10 @@ by `company_profile_id` and does not establish a person-level customer entity.
 | Term | Operational definition | What it does not mean |
 |---|---|---|
 | Revenue-active company | Has a revenue row in the observation month. There are no exactly-zero total-revenue rows through April, so row presence and non-zero revenue are equivalent in this extract. | It does not prove product usage, login activity, an open bank account, or subscription status. |
-| Healthy revenue account | Revenue-active now and has generated revenue in every observed calendar month since activation. Compare this rate at equal customer age when ranking cohorts or segments. | It is not a measure of profitability, satisfaction, credit quality, or contractual health. |
+| Continuously monetized | Revenue-active now and has generated revenue in every observed calendar month since activation. | Continuity alone does not mean economically Healthy; revenue may be falling. |
+| Healthy revenue account | Continuously monetized, has three prior complete months, and does not meet the material revenue-decline rule. | It is not a measure of profitability, satisfaction, product usage, credit quality, or contractual health. |
+| Watch - revenue declining | Continuously monetized, but April revenue is at least 30% and EUR 10 below the median of the three previous complete calendar months. | It is not churn or predicted loss; it is a diagnostic trigger. |
+| Insufficient history | Active, no-gap account without three prior complete post-activation calendar months. | It is not unhealthy; revenue momentum is not yet classifiable. |
 | Recovered / monitor | Revenue-active now but has at least one earlier missing revenue month after activation. | Reactivation does not mean risk has fully normalized. |
 | At-risk | Previously revenue-active, then absent for one or two consecutive months—approximately 30-60 days. | A missing month is not confirmed cancellation. |
 | Churned proxy | Previously revenue-active, then absent for at least three consecutive months—approximately 90+ days. | It is not confirmed customer churn. Companies can still return, and `company_closed_date` is not used. |
@@ -135,6 +148,11 @@ by `company_profile_id` and does not establish a person-level customer entity.
 
 Why the thresholds are defensible:
 
+- The 30% relative decline is the middle of the tested 20%/30%/40% range; the
+  EUR 10 floor removes immaterial percentage moves on small values.
+- Among assessable high-value accounts, the decline rate remains material across
+  the range: 27.87%, 23.21%, and 17.98%, respectively, with the EUR 10 floor.
+- Median rather than mean reduces sensitivity to a single prior revenue spike.
 - Return within the next two observable months is 13.4% after one inactive
   month, 8.1% after two, and 4.9% after three.
 - The three-month boundary is therefore a practical low-return threshold, but it
@@ -164,23 +182,34 @@ advantage. An exact 90-day window would require daily revenue data. The raw
 cumulative 73.93% and activation-month-inclusive 67.02% results belong in the
 appendix as sensitivities.
 
-#### 2. High-value account-health distribution
+#### 2. High-value account-health and momentum distribution
 
 Among the 3,514 cumulative top-20 companies as of April:
 
 | State | Companies | Share of top 20% | Share of top-20 historical revenue |
 |---|---:|---:|---:|
-| Healthy revenue account | 3,341 | 95.08% | 96.15% |
+| Healthy revenue account | 1,631 | 46.41% | 47.38% |
+| Watch - revenue declining | 493 | 14.03% | 18.88% |
 | Recovered / monitor | 19 | 0.54% | 0.28% |
+| Insufficient history | 1,217 | 34.63% | 29.89% |
 | At-risk | 85 | 2.42% | 2.12% |
 | Churned proxy | 69 | 1.96% | 1.45% |
+
+The relevant momentum denominator is the **2,124** continuously monetized
+high-value accounts with three prior complete months. Within that assessable
+group, 76.79% are Healthy and 23.21% are Watch. Do not interpret the 34.63%
+with insufficient history as unhealthy.
+
+The 493 Watch accounts show an observed EUR 41.0k difference between their
+summed trailing monthly medians and April revenue. This is neither forecast
+loss nor a causal estimate of recoverable revenue.
 
 The last observed monthly revenue of the 154 inactive high-value companies is
 EUR 19.24k. Treat this only as an exposure proxy, not forecast lost revenue.
 
-Why use it: it shows that concentration is a structural risk, but there is no
-current high-value churn emergency. The action should combine protection with
-growth.
+Why use it: it corrects the misleading implication that uninterrupted revenue
+alone means health. There is no confirmed churn emergency, but a measurable
+early-warning revenue risk exists inside the active high-value pool.
 
 #### 3. Segment opportunity and representation
 
@@ -201,7 +230,46 @@ Preferred three-complete-month results:
 Why use it: concentration alone says how much value is concentrated; segment
 representation says where to act.
 
-#### 4. Growth quality
+The presentation ranking uses horizontal bars for share of high-value revenue,
+colors for representation, and `N` for eligible population. This intentionally
+avoids an opaque composite score: BTP is the strongest scalable persona, Plus
+is the strongest scalable plan, Business is the most efficient but small, and
+Start is the largest absolute plan pool but only proportional to its base.
+
+#### 4. Comparable mature-company health by segment
+
+For fair stacked-bar comparisons, restrict to the **6,337 companies activated
+by December 2025**. They have three complete post-activation months before the
+April cutoff, so the chart is not dominated by insufficient history.
+
+Overall mature-base health:
+
+| State | Companies | Share |
+|---|---:|---:|
+| Healthy | 4,735 | 74.72% |
+| Watch | 673 | 10.62% |
+| Recovered | 94 | 1.48% |
+| At-risk | 280 | 4.42% |
+| Churned proxy | 538 | 8.49% |
+| Never monetized | 17 | 0.27% |
+
+Strong and weak signals from the 100% stacked bars:
+
+- Business is highly revenue-efficient but fragile: only 46.15% Healthy and
+  43.36% inactive, on a small mature base of 143.
+- Plus is scalable but less healthy than Start or Free: 64.05% Healthy, 15.29%
+  Watch, and 18.08% inactive.
+- BTP remains the best balanced opportunity: 71.07% Healthy, 15.55% Watch, and
+  12.25% inactive across 1,151 mature companies.
+- Consultant and Developer IT are the healthiest large personas at about 80%
+  Healthy.
+- Automobile Trade Repair and Bikers Drivers have the largest combined Watch +
+  inactive signals among the ranked personas, at 35.56% and 34.73%.
+
+Use 100% bars to compare rates and always show `N` so a small segment does not
+look more strategically important than a large one.
+
+#### 5. Growth quality
 
 Use no more than two supporting numbers:
 
@@ -343,7 +411,7 @@ Use pre-period revenue for variance reduction where appropriate.
 
 - Incremental interchange, deposit-interest, subscription, and banking-fee
   revenue per eligible company.
-- Healthy-account retention and movement into At-risk.
+- Movement between Healthy, Watch, At-risk, and Recovered states.
 - Product-adoption conversion for the behavior actually targeted.
 - Treatment reach and engagement.
 
@@ -450,22 +518,26 @@ Headline:
 Use:
 
 - Lead with `20% of companies → 70% of three-complete-month revenue`.
-- Show BTP share and Plus/Business representation.
-- Use April growth and the 71% usage/balance mix only as current context.
+- Rank personas and initial plans by share of high-value revenue; use bar color
+  for representation and label the eligible population.
+- Contrast BTP scale, Plus scalability, Business efficiency/small size, and
+  Start scale/proportionality.
 - State the position: protect and replicate the high-value pool.
 
 ### Page 2 — Ranked decisions and rejected alternatives
 
 Headline:
 
-> Rank 1: BTP adoption experiment. Rank 2: first-gap high-value protection.
+> Rank 1: BTP adoption experiment. Rank 2: revenue-decline and first-gap protection.
 
 Use:
 
 - Put the two initiatives in a table with evidence, observable magnitude, and
   what cannot be sized.
-- Show that 95% of high-value accounts are Healthy, which is why blanket churn
-  is not the first recommendation.
+- Show 100% stacked health bars for the 6,337 mature companies, broken down by
+  persona and initial plan and sorted by Watch + inactive share.
+- Call out Business fragility, Plus risk/scale, BTP's balanced opportunity, and
+  the stronger Consultant/Developer IT health profile.
 - Name the rejected alternatives: Business acquisition, broad funnel overhaul,
   blanket churn, and immediate plan upsell.
 
@@ -485,8 +557,8 @@ Use:
   confirmed April cutoff.
 - **0:40-1:40 — Proof and magnitude:** concentration, BTP/Plus composition, and
   usage/balance revenue mix.
-- **1:40-2:50 — Ranked initiatives:** explain why adoption is first, first-gap
-  protection second, and why the alternatives lose.
+- **1:40-2:50 — Ranked initiatives:** explain why adoption is first, decline and
+  first-gap protection second, and why the alternatives lose.
 - **2:50-4:00 — Causal test:** eligibility, randomization, primary metric,
   guardrails, and success threshold.
 - **4:00-4:40 — What cannot be concluded:** no true churn, forecast LTV, causal
@@ -496,8 +568,20 @@ Use:
 ## Files supporting the presentation
 
 - `sql/presentation_kpis.sql`: formal account-health classification.
+- `sql/account_health_playground.sql`: editable decline-threshold sensitivity.
+- `eda_outputs/eda_company_revenue_momentum_at_cutoff.csv`: company-level
+  momentum audit table.
 - `eda_outputs/eda_top20_account_health_summary.csv`: high-value health table.
 - `eda_outputs/eda_account_health_by_segment.csv`: health by persona and plan.
+- `eda_outputs/eda_revenue_momentum_threshold_sensitivity.csv`: 20%/30%/40%
+  decline sensitivity with and without the EUR 10 floor.
+- `eda_outputs/eda_top20_revenue_momentum_by_segment.csv`: Watch concentration
+  by persona and initial plan.
+- `eda_outputs/eda_segment_opportunity_ranking.csv`: transparent persona and
+  initial-plan ranking for the Page 1 bars.
+- `eda_outputs/eda_comparable_account_health_by_segment.csv`: mature-base health
+  states for the Page 2 stacked bars.
+- `SEGMENT_RANKING_AND_HEALTH_FINDINGS.md`: interpretation of both visuals.
 - `eda_outputs/eda_first3_full_month_top20_revenue_summary.csv`: preferred
   three-complete-month concentration result.
 - `eda_outputs/eda_first3_full_month_top20_revenue_by_segment.csv`: preferred

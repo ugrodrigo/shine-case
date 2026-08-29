@@ -239,6 +239,32 @@ BTP represents 26.51% of this high-value pool, while Plus and Business are
 respectively 2.18x and 3.55x overrepresented relative to their base populations.
 The monthly revenue source cannot support an exact day-level 90-day window.
 
+### Revenue health and momentum
+
+The original `Healthy revenue account` label only measured uninterrupted
+monthly revenue. That continuity result remains useful—3,341 of 3,514
+cumulative high-value companies (95.08%) are currently active with no historical
+gap—but it does not detect falling revenue.
+
+The revised health layer compares April revenue with the median of the three
+prior complete post-activation calendar months. A company becomes `Watch -
+revenue declining` when April is at least 30% and EUR 10 below that baseline.
+
+- 2,124 high-value continuously active companies have sufficient history.
+- 1,631 (76.79%) are Healthy and 493 (23.21%) are Watch.
+- The Watch group generated EUR 29.8k in April versus a summed monthly median
+  baseline of EUR 70.8k: an observed EUR 41.0k gap, not forecast loss.
+- Another 1,217 active high-value accounts have insufficient history and should
+  not be classified as either healthy or unhealthy on momentum.
+- BTP has 150 Watch companies among 515 assessable high-value accounts (29.13%)
+  and an observed EUR 13.87k monthly gap.
+
+Sensitivity supports a material signal rather than a single precise estimate.
+With the EUR 10 floor, the high-value Watch share is 27.87% at a 20% decline,
+23.21% at 30%, and 17.98% at 40%. Product-usage data is required to diagnose
+whether card activity, balances, transfers, subscriptions, or another behavior
+caused the decline.
+
 ## 5. Observed LTV proxy
 
 Observed cumulative revenue continues growing with customer age:

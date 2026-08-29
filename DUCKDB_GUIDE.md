@@ -94,7 +94,12 @@ Detailed outputs are also available for:
 - Cumulative and tenure-controlled top-10 and top-20 revenue concentration.
 - Preferred top-20 concentration across the first three complete calendar
   months after activation, excluding the partial activation month.
-- Presentation account-health states and high-value top-20 health.
+- Presentation account-health states combining lifecycle continuity with a
+  trailing-three-month revenue-momentum warning.
+- Revenue-decline threshold sensitivity and high-value Watch accounts by
+  persona and initial plan.
+- Transparent persona and initial-plan opportunity rankings plus comparable
+  mature-company health stacks.
 
 ## Run and adapt the cohort analysis
 
@@ -103,6 +108,7 @@ Rebuild all tables first, then run the cohort template:
 ```powershell
 python run_eda.py
 python run_query.py sql/cohort_playground.sql
+python run_query.py sql/account_health_playground.sql
 ```
 
 Use `months_since_activation` to compare cohorts at the same age. For example,
@@ -127,10 +133,11 @@ because older cohorts have had more time to become inactive.
 Do not paste the entire EDA into the slides. Put the complete SQL file in the
 submission appendix, then show only the queries supporting the key claims:
 
-1. Monthly revenue and revenue mix.
-2. The cohort or segment comparison behind the recommendation.
-3. The sizing calculation for the recommended initiative.
-4. Optionally, the missing-month or negative-fee validation query.
+1. Preferred three-complete-month concentration and BTP composition.
+2. Revised high-value health states and the revenue-decline threshold
+   sensitivity.
+3. The cohort or segment comparison behind the recommended initiative.
+4. Optionally, the missing-month, May-completeness, or negative-fee validation.
 
 Keep comments explaining definitions and assumptions. This is more valuable
 than including every exploratory query.

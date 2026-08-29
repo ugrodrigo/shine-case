@@ -71,9 +71,14 @@ OUTPUT_TABLES = [
     "eda_company_first3_full_month_revenue_rank",
     "eda_first3_full_month_top20_revenue_summary",
     "eda_first3_full_month_top20_revenue_by_segment",
+    "eda_company_revenue_momentum_at_cutoff",
     "eda_company_account_health_at_cutoff",
     "eda_account_health_by_segment",
     "eda_top20_account_health_summary",
+    "eda_revenue_momentum_threshold_sensitivity",
+    "eda_top20_revenue_momentum_by_segment",
+    "eda_segment_opportunity_ranking",
+    "eda_comparable_account_health_by_segment",
 ]
 
 
