@@ -854,3 +854,150 @@ ORDER BY
     top_20pct_companies DESC,
     persona,
     initial_subscription_group;
+
+-- ============================================================
+-- PREFERRED PRESENTATION METHOD: FIRST 3 COMPLETE MONTHS
+-- ============================================================
+-- The source revenue table is monthly. Activation month (age 0) can contain
+-- anywhere from one day to a full month of post-activation exposure, and the
+-- monthly aggregate cannot be split accurately at activation date. The
+-- preferred presentation method therefore excludes age 0 and sums ages 1-3:
+-- the first three complete calendar months after activation. This retains the
+-- same 9,088 companies with age 3 observable while removing partial-month bias.
+
+CREATE OR REPLACE TABLE eda_company_first3_full_month_revenue_rank AS
+WITH company_revenue AS (
+    SELECT
+        company_profile_id,
+        persona,
+        initial_subscription_group,
+        activation_month,
+        SUM(subscription_revenue) AS subscription_revenue,
+        SUM(interchange_revenue) AS interchange_revenue,
+        SUM(banking_fees) AS banking_fees,
+        SUM(deposit_interest_revenue) AS deposit_interest_revenue,
+        SUM(total_revenue) AS first3_full_month_revenue
+    FROM eda_company_cohort_month_state
+    WHERE months_since_activation BETWEEN 1 AND 3
+    GROUP BY
+        company_profile_id,
+        persona,
+        initial_subscription_group,
+        activation_month
+    HAVING COUNT(*) = 3
+),
+ranked AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            ORDER BY first3_full_month_revenue DESC, company_profile_id
+        ) AS revenue_rank,
+        COUNT(*) OVER () AS eligible_company_population
+    FROM company_revenue
+)
+SELECT
+    *,
+    CEIL(0.20 * eligible_company_population)::BIGINT
+        AS top_20pct_company_count,
+    revenue_rank <= CEIL(0.20 * eligible_company_population)
+        AS is_top_20pct
+FROM ranked
+ORDER BY revenue_rank;
+
+CREATE OR REPLACE TABLE eda_first3_full_month_top20_revenue_summary AS
+SELECT
+    COUNT(*) AS eligible_companies,
+    COUNT(*) FILTER (WHERE is_top_20pct) AS top_20pct_companies,
+    SUM(first3_full_month_revenue) AS total_first3_full_month_revenue,
+    SUM(first3_full_month_revenue) FILTER (WHERE is_top_20pct)
+        AS top_20pct_first3_full_month_revenue,
+    ROUND(
+        100.0 * SUM(first3_full_month_revenue) FILTER (
+            WHERE is_top_20pct
+        ) / SUM(first3_full_month_revenue),
+        2
+    ) AS top_20pct_revenue_share_pct,
+    MIN(first3_full_month_revenue) FILTER (WHERE is_top_20pct)
+        AS top_20pct_entry_revenue,
+    AVG(first3_full_month_revenue) FILTER (WHERE is_top_20pct)
+        AS top_20pct_average_revenue,
+    MEDIAN(first3_full_month_revenue) FILTER (WHERE is_top_20pct)
+        AS top_20pct_median_revenue,
+    AVG(first3_full_month_revenue) FILTER (WHERE NOT is_top_20pct)
+        AS other_80pct_average_revenue,
+    MEDIAN(first3_full_month_revenue) FILTER (WHERE NOT is_top_20pct)
+        AS other_80pct_median_revenue
+FROM eda_company_first3_full_month_revenue_rank;
+
+CREATE OR REPLACE TABLE eda_first3_full_month_top20_revenue_by_segment AS
+WITH aggregated AS (
+    SELECT
+        CASE WHEN GROUPING(persona) = 1 THEN 'ALL' ELSE persona END AS persona,
+        CASE
+            WHEN GROUPING(initial_subscription_group) = 1 THEN 'ALL'
+            ELSE initial_subscription_group
+        END AS initial_subscription_group,
+        CASE
+            WHEN GROUPING(persona) = 1
+             AND GROUPING(initial_subscription_group) = 1 THEN 'overall'
+            WHEN GROUPING(persona) = 0
+             AND GROUPING(initial_subscription_group) = 1 THEN 'persona'
+            WHEN GROUPING(persona) = 1
+             AND GROUPING(initial_subscription_group) = 0 THEN 'initial_plan'
+            ELSE 'persona_x_initial_plan'
+        END AS segment_level,
+        COUNT(*) AS eligible_companies,
+        COUNT(*) FILTER (WHERE is_top_20pct) AS top_20pct_companies,
+        SUM(first3_full_month_revenue) AS segment_revenue,
+        SUM(first3_full_month_revenue) FILTER (WHERE is_top_20pct)
+            AS top_20pct_revenue
+    FROM eda_company_first3_full_month_revenue_rank
+    GROUP BY GROUPING SETS (
+        (),
+        (persona),
+        (initial_subscription_group),
+        (persona, initial_subscription_group)
+    )
+),
+totals AS (
+    SELECT
+        eligible_companies AS all_eligible_companies,
+        top_20pct_companies AS all_top_20pct_companies,
+        top_20pct_revenue AS all_top_20pct_revenue
+    FROM aggregated
+    WHERE segment_level = 'overall'
+)
+SELECT
+    a.*,
+    ROUND(
+        100.0 * a.top_20pct_companies / NULLIF(a.eligible_companies, 0),
+        2
+    ) AS segment_top_20pct_penetration_pct,
+    ROUND(
+        100.0 * a.top_20pct_companies / t.all_top_20pct_companies,
+        2
+    ) AS top_20pct_company_mix_pct,
+    ROUND(
+        100.0 * a.eligible_companies / t.all_eligible_companies,
+        2
+    ) AS base_company_mix_pct,
+    ROUND(
+        (a.top_20pct_companies::DOUBLE / t.all_top_20pct_companies)
+        / NULLIF(
+            a.eligible_companies::DOUBLE / t.all_eligible_companies,
+            0
+        ),
+        2
+    ) AS company_representation_index,
+    ROUND(
+        100.0 * COALESCE(a.top_20pct_revenue, 0)
+        / t.all_top_20pct_revenue,
+        2
+    ) AS share_of_all_top_20pct_revenue_pct
+FROM aggregated a
+CROSS JOIN totals t
+ORDER BY
+    segment_level,
+    top_20pct_companies DESC,
+    persona,
+    initial_subscription_group;

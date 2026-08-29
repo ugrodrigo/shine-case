@@ -225,16 +225,19 @@ share of 12.1%, creating different risks by segment.
 ### Revenue concentration
 
 The top 10% of cumulative revenue companies through April generate 56.61% of
-confirmed revenue. Because cumulative ranking favors earlier activations, the
-equal-tenure age-three sensitivity is preferred for interpretation: its top 10%
-generate 49.61% of revenue through age three. BTP, Business, and Plus remain
-overrepresented after this control. Full results and segment composition are in
-`REVENUE_CONCENTRATION_FINDINGS.md`.
+confirmed revenue. Because cumulative ranking favors earlier activations, an
+equal-tenure age-three sensitivity reduces that share to 49.61%. This top-10
+sensitivity includes activation month; the presentation's preferred top-20
+measure instead excludes that partial month. BTP, Business, and Plus remain
+overrepresented after tenure control. Full results and segment composition are
+in `REVENUE_CONCENTRATION_FINDINGS.md`.
 
-For the presentation-oriented top-20 view, the raw cumulative share is 73.93%
-and the preferred equal-tenure share is 67.02%. At equal tenure, BTP represents
-25.96% of the high-value pool, while Plus and Business are respectively 2.17x
-and 3.85x overrepresented relative to their base populations.
+For the presentation-oriented top-20 view, the raw cumulative share is 73.93%.
+The preferred comparison excludes the partial activation month and uses the
+first three complete calendar months: its top 20% generates 70.24% of revenue.
+BTP represents 26.51% of this high-value pool, while Plus and Business are
+respectively 2.18x and 3.55x overrepresented relative to their base populations.
+The monthly revenue source cannot support an exact day-level 90-day window.
 
 ## 5. Observed LTV proxy
 

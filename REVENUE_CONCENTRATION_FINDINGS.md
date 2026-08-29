@@ -13,6 +13,11 @@ Because cumulative revenue favors older companies, a second sensitivity ranks
 companies by cumulative revenue through customer age three. Every company in
 that sensitivity has exactly four possible revenue months: ages 0-3.
 
+The **preferred presentation method** excludes the partial activation month and
+uses ages 1-3: the first three complete calendar months after activation. The
+source revenue table is monthly, so it cannot divide age-0 revenue precisely at
+the activation date. An exact 90-day window would require daily revenue data.
+
 ## Headline concentration
 
 | Metric | Result |
@@ -128,6 +133,20 @@ The drop from 56.61% to 49.61% shows that tenure explains some concentration,
 but roughly half of comparable four-month revenue still comes from 10% of
 companies.
 
+### Preferred method: first three complete months
+
+Excluding activation month retains the same 9,088 companies while giving every
+company three complete calendar months of revenue exposure. The top 20% is 1,818
+companies and generates **70.24%** of revenue. Its entry threshold is EUR 154.90.
+
+The segment result remains stable:
+
+- BTP: 482 companies, 26.51% of the top 20%, 30.28% of its revenue, 1.47x
+  represented.
+- Plus: 2.18x represented; Business: 3.55x; Start: 0.97x; Free: 0.48x.
+- BTP + Plus: 170 companies, 9.35% of the top 20%, 10.47% of its revenue, and
+  2.44x represented.
+
 ## Top 20% presentation view
 
 The top 20% contains 3,514 of the 17,568 revenue companies. This group is:
@@ -135,11 +154,11 @@ The top 20% contains 3,514 of the 17,568 revenue companies. This group is:
 - 19.94% of activated companies through April.
 - 9.45% of all 37,193 confirmed company profiles.
 - Responsible for EUR 1.738m, or 73.93%, of cumulative confirmed revenue.
-- Responsible for **67.02%** of revenue in the preferred equal-tenure age-three
-  view: 1,818 of 9,088 companies with four possible revenue months.
+- Responsible for **70.24%** of revenue in the preferred first-three-complete-
+  months view: 1,818 of 9,088 companies.
 
 The minimum cumulative revenue to enter the raw top 20% is EUR 167.70. The
-equal-tenure age-three threshold is EUR 196.21.
+preferred three-complete-month threshold is EUR 154.90.
 
 ### Revenue types
 
@@ -154,54 +173,55 @@ equal-tenure age-three threshold is EUR 196.21.
 The top 20% crosses 80% for interchange and deposit interest, but not for total
 revenue. Subscription remains considerably less concentrated.
 
-### Initial plans at equal tenure
+### Initial plans across three complete months
 
 | Initial plan | Top-20% companies | Share of top 20% | Base share | Representation | Share of top-20% revenue |
 |---|---:|---:|---:|---:|---:|
-| Start | 752 | 41.36% | 44.15% | 0.94x | 39.44% |
-| Plus | 558 | 30.69% | 14.15% | **2.17x** | 32.81% |
-| Free | 357 | 19.64% | 39.55% | **0.50x** | 17.88% |
-| Business | 151 | 8.31% | 2.16% | **3.85x** | 9.87% |
+| Start | 775 | 42.63% | 44.15% | 0.97x | 39.70% |
+| Plus | 560 | 30.80% | 14.15% | **2.18x** | 33.42% |
+| Free | 344 | 18.92% | 39.55% | **0.48x** | 17.20% |
+| Business | 139 | 7.65% | 2.16% | **3.55x** | 9.67% |
 
-Business has the strongest enrichment: 77.04% of age-three Business companies
+Business has the strongest enrichment: 70.92% of comparable Business companies
 are in the overall top 20%. Plus is the more scalable high-value pool, with
-43.39% entering the top 20%. Start is approximately proportional to its size,
+43.55% entering the top 20%. Start is approximately proportional to its size,
 while Free is substantially underrepresented.
 
-### Personas at equal tenure
+### Personas across three complete months
 
 | Persona | Top-20% companies | Share of top 20% | Representation | Share of top-20% revenue |
 |---|---:|---:|---:|---:|
-| BTP | 472 | 25.96% | **1.44x** | 29.54% |
-| Consultant | 272 | 14.96% | 0.86x | 15.29% |
-| Others | 220 | 12.10% | 0.76x | 10.42% |
-| Retail | 216 | 11.88% | 0.86x | 11.97% |
-| Developer IT | 167 | 9.19% | 1.09x | 7.26% |
-| Automobile Trade Repair | 105 | 5.78% | **1.33x** | 6.31% |
-| Bikers Drivers | 98 | 5.39% | 0.87x | 4.58% |
-| Restauration | 65 | 3.58% | 1.32x | 3.61% |
-| Wholesale | 55 | 3.03% | 1.31x | 3.50% |
+| BTP | 482 | 26.51% | **1.47x** | 30.28% |
+| Consultant | 274 | 15.07% | 0.86x | 14.91% |
+| Others | 222 | 12.21% | 0.77x | 10.68% |
+| Retail | 200 | 11.00% | 0.80x | 11.57% |
+| Developer IT | 157 | 8.64% | 1.03x | 6.35% |
+| Automobile Trade Repair | 108 | 5.94% | **1.36x** | 6.45% |
+| Bikers Drivers | 95 | 5.23% | 0.84x | 4.50% |
+| Restauration | 67 | 3.69% | 1.36x | 3.65% |
+| Wholesale | 58 | 3.19% | 1.38x | 3.79% |
 
 BTP remains the clearest major high-revenue persona after equalizing customer
 age. Automobile Trade Repair, Restauration, and Wholesale are also enriched but
 have much smaller absolute populations.
 
-The largest equal-tenure persona-plan combinations are:
+The largest comparable persona-plan combinations are:
 
-- BTP + Start: 169 companies, 9.30% of the top 20%.
-- BTP + Plus: 162 companies, 8.91%; this combination generates 10.02% of all
-  top-20% revenue and is represented at 2.33x its base share.
+- BTP + Start: 175 companies, 9.63% of the top 20%.
+- BTP + Plus: 170 companies, 9.35%; this combination generates 10.47% of all
+  top-20% revenue and is represented at 2.44x its base share.
 - Consultant + Start: 141 companies, 7.76%.
 - Retail + Start: 100 companies, 5.50%.
 - BTP + Free: 93 companies, 5.12%.
 
 ### Presentation-ready takeaway
 
-> The highest-value 20% of comparable companies generate 67% of four-month
-> revenue. BTP represents 26% of this pool and 30% of its revenue, while Plus
-> and Business companies are respectively 2.2x and 3.9x overrepresented.
+> The highest-value 20% of comparable companies generate 70% of revenue across
+> the first three complete post-activation months. BTP represents 26% of this
+> pool and 30% of its revenue, while Plus
+> and Business companies are respectively 2.2x and 3.6x overrepresented.
 
-This is close to a Pareto-style pattern but should be described as `67/20`, not
+This is close to a Pareto-style pattern but should be described as `70/20`, not
 as a literal `80/20` rule. The cumulative, non-tenure-controlled sensitivity is
 stronger at `74/20`.
 
@@ -238,7 +258,7 @@ while also highlighting dependence on usage and customer balances. It does not
 mean Business should automatically be the acquisition priority: the earlier
 analysis shows Business also has the weakest funnel and revenue continuity.
 
-For a three-slide presentation, the top-20 equal-tenure result is easier to
+For a three-slide presentation, the first-three-complete-month result is easier to
 communicate than the top-decile analysis and has a larger actionable customer
 pool. Keep the top-10 and cumulative results in the appendix as sensitivities.
 
@@ -263,8 +283,14 @@ pool. Keep the top-10 and cumulative results in the appendix as sensitivities.
   plan, and intersection profile.
 - `eda_outputs/eda_top20_revenue_by_type.csv`: revenue-type concentration.
 - `eda_outputs/eda_top20_revenue_by_activation_cohort.csv`: exposure-bias check.
-- `eda_outputs/eda_age3_top20_revenue_summary.csv`: preferred equal-tenure
-  headline result.
-- `eda_outputs/eda_age3_top20_revenue_by_segment.csv`: preferred equal-tenure
-  persona and plan composition.
+- `eda_outputs/eda_age3_top20_revenue_summary.csv`: activation-month-inclusive
+  tenure sensitivity.
+- `eda_outputs/eda_age3_top20_revenue_by_segment.csv`: activation-month-inclusive
+  tenure sensitivity by persona and plan.
+- `eda_outputs/eda_company_first3_full_month_revenue_rank.csv`: preferred
+  company-level ranking excluding activation month.
+- `eda_outputs/eda_first3_full_month_top20_revenue_summary.csv`: preferred
+  top-20 headline result.
+- `eda_outputs/eda_first3_full_month_top20_revenue_by_segment.csv`: preferred
+  persona, plan, and intersection mix.
 - `sql/concentration_playground.sql`: short editable query.

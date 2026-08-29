@@ -92,6 +92,8 @@ Detailed outputs are also available for:
 - Consecutive revenue-active streaks, strict continuous-activity shares, and
   next-month persistence after a streak has restarted.
 - Cumulative and tenure-controlled top-10 and top-20 revenue concentration.
+- Preferred top-20 concentration across the first three complete calendar
+  months after activation, excluding the partial activation month.
 - Presentation account-health states and high-value top-20 health.
 
 ## Run and adapt the cohort analysis
