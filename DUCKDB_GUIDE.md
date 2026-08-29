@@ -13,7 +13,8 @@
 - `sql/streak_playground.sql`: a short editable persona loyalty ranking.
 - `sql/revenue_concentration_analysis.sql`: top-10 and top-20 revenue
   concentration, segment mix, and tenure-controlled sensitivities.
-- `sql/concentration_playground.sql`: editable top-20 segment query.
+- `sql/concentration_playground.sql`: editable top-20 concentration sensitivity;
+  do not use it as the primary full-population segment ranking.
 - `sql/playground.sql`: a small query template intended for experimentation.
 - `run_eda.py`: rebuilds the database and exports the EDA result tables.
 - `run_query.py`: runs the playground or another SQL file.
@@ -98,8 +99,9 @@ Detailed outputs are also available for:
   trailing-three-month revenue-momentum warning.
 - Revenue-decline threshold sensitivity and high-value Watch accounts by
   persona and initial plan.
-- Transparent persona and initial-plan opportunity rankings plus comparable
-  mature-company health stacks.
+- Transparent full-population persona and initial-plan opportunity rankings
+  plus comparable mature-company health stacks. Top-20 composition remains a
+  secondary concentration view.
 
 ## Run and adapt the cohort analysis
 

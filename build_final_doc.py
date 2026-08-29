@@ -302,8 +302,9 @@ def make_segment_ranking_chart(path: Path) -> None:
             label = str(value).replace("_", " ").title()
             label = label.replace("Btp", "BTP").replace(" It", " IT")
             labels.append(label)
-        values = frame["share_of_all_top_20pct_revenue_pct"].astype(float).tolist()
-        indexes = frame["company_representation_index"].astype(float).tolist()
+        values = frame["share_of_all_comparable_revenue_pct"].astype(float).tolist()
+        indexes = frame["average_revenue_per_company_index"].astype(float).tolist()
+        averages = frame["average_first3_full_month_revenue"].astype(float).tolist()
         populations = frame["eligible_companies"].astype(int).tolist()
         colors = [bar_color(value) for value in indexes]
         y = list(range(len(frame)))
@@ -311,18 +312,40 @@ def make_segment_ranking_chart(path: Path) -> None:
         ax.set_yticks(y, labels, fontsize=6.8, color="#17212B")
         ax.invert_yaxis()
         ax.set_xlim(0, x_limit)
-        ax.set_xlabel("Share of high-value revenue", fontsize=6.7, color="#425466")
+        ax.set_xlabel("Share of all comparable revenue", fontsize=6.7, color="#425466")
         ax.tick_params(axis="x", labelsize=6.2, colors="#6B7780", length=0)
         ax.tick_params(axis="y", length=0, pad=4)
         ax.grid(axis="x", color="#E8EDF0", linewidth=0.55)
         ax.set_axisbelow(True)
         ax.set_title(title, loc="left", fontsize=8.8, fontweight="bold", color="#102A43", pad=4)
-        for bar, share, population, index in zip(bars, values, populations, indexes):
+        for bar, share, population, average, index in zip(
+            bars, values, populations, averages, indexes
+        ):
             if share < 5:
                 ax.text(
                     share + 0.5,
                     bar.get_y() + bar.get_height() / 2,
-                    f"{share:.1f}%  |  N={population:,}  |  {index:.2f}×",
+                    f"{share:.1f}%  |  N={population:,}  |  €{average:.0f}/co  |  {index:.2f}×",
+                    ha="left",
+                    va="center",
+                    fontsize=6.2,
+                    color="#425466",
+                )
+            elif share < 8:
+                ax.text(
+                    share / 2,
+                    bar.get_y() + bar.get_height() / 2,
+                    f"{share:.1f}%",
+                    ha="center",
+                    va="center",
+                    fontsize=6.5,
+                    fontweight="bold",
+                    color="white",
+                )
+                ax.text(
+                    share + 0.7,
+                    bar.get_y() + bar.get_height() / 2,
+                    f"N={population:,}  |  €{average:.0f}/co  |  {index:.2f}×",
                     ha="left",
                     va="center",
                     fontsize=6.2,
@@ -342,7 +365,7 @@ def make_segment_ranking_chart(path: Path) -> None:
                 ax.text(
                     share + 0.7,
                     bar.get_y() + bar.get_height() / 2,
-                    f"N={population:,}  |  {index:.2f}×",
+                    f"N={population:,}  |  €{average:.0f}/co  |  {index:.2f}×",
                     ha="left",
                     va="center",
                     fontsize=6.2,
@@ -361,10 +384,10 @@ def make_segment_ranking_chart(path: Path) -> None:
     fig.patch.set_facecolor("white")
     for ax in axes:
         ax.set_facecolor("white")
-    draw_panel(axes[0], personas, "Persona ranking", 49)
-    draw_panel(axes[1], plans, "Initial-plan ranking", 61)
+    draw_panel(axes[0], personas, "Persona ranking", 56)
+    draw_panel(axes[1], plans, "Initial-plan ranking", 76)
     fig.suptitle(
-        "Revenue scale and efficiency point to different segment choices",
+        "Full-population revenue scale and efficiency point to different choices",
         x=0.01,
         y=0.98,
         ha="left",
@@ -373,9 +396,9 @@ def make_segment_ranking_chart(path: Path) -> None:
         color="#102A43",
     )
     legend = [
-        Patch(facecolor="#008C8C", label="Overrepresented (≥1.2×)"),
-        Patch(facecolor="#6AAED6", label="Broadly proportional (0.8–1.2×)"),
-        Patch(facecolor="#B8C3CA", label="Underrepresented (<0.8×)"),
+        Patch(facecolor="#008C8C", label="Revenue/company ≥1.2× overall"),
+        Patch(facecolor="#6AAED6", label="Revenue/company 0.8–1.2×"),
+        Patch(facecolor="#B8C3CA", label="Revenue/company <0.8×"),
     ]
     fig.legend(
         handles=legend,
@@ -571,17 +594,17 @@ def build_page_one(document: Document, ranking_chart: Path) -> None:
     )
     add_callout(
         document,
-        "Across the first three complete calendar months after activation, the highest-revenue "
-        "20% of companies generate 70% of revenue. BTP contributes 30% of that value and is "
-        "the clearest scalable opportunity.",
+        "Across all 9,088 comparable companies, BTP contributes 26.74% of revenue and Start "
+        "44.64% by plan; Plus generates 2.02× average revenue per company. Separately, the top "
+        "20% generates 70.24%—a concentration signal, not the segment-ranking basis.",
     )
     add_kpi_strip(
         document,
         [
-            ("20%", "highest-revenue companies"),
-            ("70.2%", "revenue in 3 complete months"),
-            ("30.3%", "high-value revenue from BTP"),
-            ("2.18×", "Plus representation in high value"),
+            ("9,088", "companies in comparable base"),
+            ("44.6%", "all comparable revenue from Start"),
+            ("26.7%", "all comparable revenue from BTP"),
+            ("70.2%", "generated by top 20% — secondary"),
         ],
     )
     p = document.add_paragraph()
@@ -620,11 +643,11 @@ def build_page_one(document: Document, ranking_chart: Path) -> None:
     set_cell_shading(opportunity, LIGHT_BLUE)
     set_cell_shading(risk, LIGHT_GREY)
     add_small_label(opportunity, "Opportunity", TEAL)
-    add_cell_text(opportunity, "BTP leads scalable persona value: 30.28% of high-value revenue and 1.47× represented.", bold=True)
-    add_cell_text(opportunity, "Plus combines scale with efficiency: 33.42% of high-value revenue and 2.18× represented.", size=8.2)
+    add_cell_text(opportunity, "BTP leads persona scale and efficiency: 26.74% of all revenue and 1.48× average revenue/company.", bold=True)
+    add_cell_text(opportunity, "Plus contributes 28.56% of all plan revenue at 2.02× average revenue/company.", size=8.2)
     add_small_label(risk, "Risk", RED)
-    add_cell_text(risk, "Business is 3.55× represented but has only 196 comparable companies.", bold=True)
-    add_cell_text(risk, "Start contributes the most high-value revenue (39.70%) but is proportional at 0.97×; scale and efficiency are different.", size=8.2)
+    add_cell_text(risk, "Business reaches 3.22× average revenue/company but contributes only 6.95% of revenue (N=196).", bold=True)
+    add_cell_text(risk, "Start contributes the most revenue (44.64%) through scale, at approximately average revenue/company (1.01×).", size=8.2)
     set_table_borders(table, color=WHITE, size="8")
 
     add_heading(document, "How to read the ranking", level=2, space_before=3)
@@ -633,8 +656,8 @@ def build_page_one(document: Document, ranking_chart: Path) -> None:
     definitions.columns[0].width = Cm(9.15)
     definitions.columns[1].width = Cm(9.15)
     text = [
-        ("Bar length", "share of all high-value revenue; this captures absolute scale"),
-        ("Bar color", "representation versus base; teal means at least 1.2×"),
+        ("Bar length", "share of revenue across the complete 9,088-company base"),
+        ("Bar color", "average revenue/company versus overall; teal means at least 1.2×"),
         ("N", "eligible companies with three complete post-activation months"),
         ("No composite score", "leadership can see the scale-efficiency trade-off directly"),
     ]
@@ -653,8 +676,8 @@ def build_page_one(document: Document, ranking_chart: Path) -> None:
     add_run(p, "Decision: ", bold=True, color=TEAL, size=9.0)
     add_run(
         p,
-        "prioritize a controlled BTP adoption test, with Plus as the strongest plan signal. "
-        "Do not mistake Business efficiency or Start scale for a complete recommendation on its own.",
+        "prioritize a controlled BTP adoption test, with Plus as the strongest scalable plan signal. "
+        "Treat the 70/20 result as concentration context, not the segment selection rule.",
         size=9.0,
     )
 
@@ -696,7 +719,7 @@ def build_page_two(document: Document, health_chart: Path) -> None:
         1,
         "BTP adoption & monetization experiment",
         "Replicate the product behaviors associated with high value; do not assume plan upsell is the lever.",
-        "BTP contributes 30.28% of high-value revenue (N=1,642; 1.47×). In the mature BTP base (N=1,151), 71.07% are Healthy and 15.55% Watch.",
+        "BTP contributes 26.74% of all comparable revenue (N=1,642; €178.85/company; 1.48× overall). In the mature BTP base, 71.07% are Healthy and 15.55% Watch.",
         "No current plan, product-use, cost, or margin data. Uplift cannot be sized in euros before a causal test.",
         TEAL,
     )

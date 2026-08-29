@@ -13,10 +13,12 @@ Because cumulative revenue favors older companies, a second sensitivity ranks
 companies by cumulative revenue through customer age three. Every company in
 that sensitivity has exactly four possible revenue months: ages 0-3.
 
-The **preferred presentation method** excludes the partial activation month and
-uses ages 1-3: the first three complete calendar months after activation. The
-source revenue table is monthly, so it cannot divide age-0 revenue precisely at
-the activation date. An exact 90-day window would require daily revenue data.
+The preferred **concentration sensitivity** excludes the partial activation
+month and uses ages 1-3: the first three complete calendar months after
+activation. The source revenue table is monthly, so it cannot divide age-0
+revenue precisely at the activation date. An exact 90-day window would require
+daily revenue data. This is secondary context; segment ranking uses all 9,088
+comparable companies rather than only the top 20%.
 
 ## Headline concentration
 
@@ -258,9 +260,10 @@ while also highlighting dependence on usage and customer balances. It does not
 mean Business should automatically be the acquisition priority: the earlier
 analysis shows Business also has the weakest funnel and revenue continuity.
 
-For a three-slide presentation, the first-three-complete-month result is easier to
-communicate than the top-decile analysis and has a larger actionable customer
-pool. Keep the top-10 and cumulative results in the appendix as sensitivities.
+For a three-slide presentation, use `70/20` as a secondary concentration KPI
+and targeted-protection lens. Use the full 9,088-company comparable population
+for the primary persona and plan ranking. Keep top-10 and cumulative results in
+the appendix as sensitivities.
 
 ## Output files
 

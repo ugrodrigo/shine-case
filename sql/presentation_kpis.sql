@@ -367,11 +367,12 @@ FROM aggregated
 ORDER BY segment_level, declining_companies DESC, persona,
          initial_subscription_group;
 
--- Transparent segment ranking for the presentation. Bar length can show share
--- of high-value revenue while the representation index distinguishes scalable
--- efficiency from segment size. No opaque composite score is used.
+-- Transparent full-population segment ranking for the presentation. Bar length
+-- shows share of all comparable revenue; color can show revenue per company
+-- relative to the overall comparable average. Top-20 composition is retained
+-- as a secondary concentration sensitivity, not the primary segment ranking.
 CREATE OR REPLACE TABLE eda_segment_opportunity_ranking AS
-WITH ranked AS (
+WITH segment_metrics AS (
     SELECT
         segment_level,
         CASE
@@ -383,18 +384,36 @@ WITH ranked AS (
         segment_revenue,
         segment_revenue / NULLIF(eligible_companies, 0)
             AS average_first3_full_month_revenue,
+        ROUND(
+            100.0 * segment_revenue
+            / NULLIF(SUM(segment_revenue) OVER (
+                PARTITION BY segment_level
+            ), 0),
+            2
+        ) AS share_of_all_comparable_revenue_pct,
+        (segment_revenue / NULLIF(eligible_companies, 0))
+        / NULLIF(
+            SUM(segment_revenue) OVER (PARTITION BY segment_level)
+            / SUM(eligible_companies) OVER (PARTITION BY segment_level),
+            0
+        ) AS average_revenue_per_company_index,
         segment_top_20pct_penetration_pct,
         share_of_all_top_20pct_revenue_pct,
-        company_representation_index,
+        company_representation_index
+    FROM eda_first3_full_month_top20_revenue_by_segment
+    WHERE segment_level IN ('persona', 'initial_plan')
+),
+ranked AS (
+    SELECT
+        *,
         ROW_NUMBER() OVER (
             PARTITION BY segment_level
             ORDER BY
-                share_of_all_top_20pct_revenue_pct DESC,
-                top_20pct_companies DESC,
+                share_of_all_comparable_revenue_pct DESC,
+                segment_revenue DESC,
                 segment_name
         ) AS revenue_opportunity_rank
-    FROM eda_first3_full_month_top20_revenue_by_segment
-    WHERE segment_level IN ('persona', 'initial_plan')
+    FROM segment_metrics
 )
 SELECT *
 FROM ranked

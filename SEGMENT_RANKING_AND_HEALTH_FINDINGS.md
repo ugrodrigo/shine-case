@@ -4,56 +4,79 @@
 
 The top-20 result answers how concentrated revenue is, but it does not show the
 full trade-off between segment scale, revenue efficiency, and health. The deck
-now keeps `20% of companies -> 70% of comparable revenue` as a headline and adds
-two decision views:
+now uses the full 9,088-company comparable base for segment selection and keeps
+`20% of companies -> 70% of comparable revenue` as secondary concentration
+context.
 
 1. A transparent persona and initial-plan revenue ranking.
 2. A 100% stacked health comparison using a mature, comparable company base.
 
 ## Revenue ranking
 
-Bar length represents **share of all high-value revenue** across the first three
-complete post-activation months. Bar color represents the segment's company
-representation in the high-value pool:
+Bar length represents **share of all comparable revenue** across the first three
+complete post-activation months. Bar color represents average revenue per
+company relative to the overall comparable average of EUR 120.87:
 
-- At least 1.2x: overrepresented.
-- 0.8x-1.2x: broadly proportional.
-- Below 0.8x: underrepresented.
+- At least 1.2x: above-average revenue/company.
+- 0.8x-1.2x: broadly near average.
+- Below 0.8x: below-average revenue/company.
 
-Every bar also shows the eligible company population. There is no composite
-score, so leadership can see whether a segment wins through scale, efficiency,
-or both.
+Every bar also shows the eligible company population and average revenue per
+company. There is no composite score or top-20 filter, so leadership can see
+whether a segment wins through scale, efficiency, or both.
 
 ### Personas
 
-| Rank | Persona | Eligible companies | Share of high-value revenue | Representation |
+| Rank | Persona | Eligible companies | Share of all revenue | Revenue/company index |
 |---:|---|---:|---:|---:|
-| 1 | BTP | 1,642 | **30.28%** | **1.47x** |
-| 2 | Consultant | 1,585 | 14.91% | 0.86x |
-| 3 | Retail | 1,254 | 11.57% | 0.80x |
-| 4 | Others | 1,441 | 10.68% | 0.77x |
-| 5 | Automobile Trade Repair | 396 | 6.45% | 1.36x |
-| 6 | Developer IT | 763 | 6.35% | 1.03x |
-| 7 | Bikers Drivers | 563 | 4.50% | 0.84x |
-| 8 | Wholesale | 210 | 3.79% | 1.38x |
+| 1 | BTP | 1,642 | **26.74%** | **1.48x** |
+| 2 | Consultant | 1,585 | 15.85% | 0.91x |
+| 3 | Others | 1,441 | 12.24% | 0.77x |
+| 4 | Retail | 1,254 | 12.19% | 0.88x |
+| 5 | Developer IT | 763 | 7.01% | 0.84x |
+| 6 | Automobile Trade Repair | 396 | 5.78% | 1.33x |
+| 7 | Bikers Drivers | 563 | 4.96% | 0.80x |
+| 8 | Wholesale | 210 | 3.36% | 1.45x |
 
 BTP is the strongest scalable persona because it combines the largest revenue
-contribution with above-base high-value representation. Automobile Trade Repair
+contribution with above-average revenue per company. Automobile Trade Repair
 and Wholesale are efficient but materially smaller.
 
 ### Initial plans
 
-| Rank | Initial plan | Eligible companies | Share of high-value revenue | Representation |
+| Rank | Initial plan | Eligible companies | Share of all revenue | Revenue/company index |
 |---:|---|---:|---:|---:|
-| 1 | Start | 4,012 | 39.70% | 0.97x |
-| 2 | Plus | 1,286 | **33.42%** | **2.18x** |
-| 3 | Free | 3,594 | 17.20% | 0.48x |
-| 4 | Business | 196 | 9.67% | **3.55x** |
+| 1 | Start | 4,012 | **44.64%** | 1.01x |
+| 2 | Plus | 1,286 | **28.56%** | **2.02x** |
+| 3 | Free | 3,594 | 19.85% | 0.50x |
+| 4 | Business | 196 | 6.95% | **3.22x** |
 
-Start wins on absolute scale but is only proportional to its base. Plus has the
-best scalable efficiency. Business has the highest representation but is too
-small and too unhealthy to be the lead recommendation. Only the initial plan is
+Start wins on absolute scale at approximately average revenue per company. Plus
+has the best scalable efficiency. Business has the highest revenue per company
+but is too small and too unhealthy to be the lead recommendation. Free's 19.85%
+share shows why the long tail cannot be removed. Only the initial plan is
 available, so this ranking does not prove that plan choice causes revenue.
+
+## Why the top 20% is secondary
+
+The top-20 view is still valuable for concentration and targeted protection,
+but it changes segment weights:
+
+| Plan | Share of all comparable revenue | Share of top-20 revenue |
+|---|---:|---:|
+| Start | **44.64%** | 39.70% |
+| Plus | 28.56% | **33.42%** |
+| Free | **19.85%** | 17.20% |
+| Business | 6.95% | **9.67%** |
+
+The 3,237 Start companies outside the top 20% generate EUR 184.0k—37.52% of
+all Start revenue and about 56% of all revenue outside the top 20%. The global
+bottom half contains 1,747 Start companies generating EUR 53.8k, or 10.97% of
+Start revenue. Small companies are not the sole driver, but collectively they
+are material.
+
+Therefore, top 20% is used for `70/20` concentration, revenue-type dependence,
+and high-value protection. It is not the primary persona or plan ranking.
 
 ## Comparable mature-company health
 

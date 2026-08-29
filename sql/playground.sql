@@ -25,11 +25,11 @@
 -- GROUP BY r.revenue_month, c.persona
 -- ORDER BY r.revenue_month, total_revenue DESC;
 
-SELECT c.company_signup_at, c.initial_subscription_group, ROUND(SUM(r.total_revenue), 2) AS total_revenue
+SELECT c.persona, ROUND(SUM(r.total_revenue), 2) AS total_revenue
 FROM companies c
 JOIN revenue_with_total r on c.company_profile_id = r.company_profile_id
-GROUP BY 1, 2
-ORDER BY 1, 2;
+GROUP BY 1
+ORDER BY 2 desc;
 
 -- Other ideas to try (uncomment one at a time):
 
