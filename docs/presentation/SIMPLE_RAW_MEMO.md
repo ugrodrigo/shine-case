@@ -1,6 +1,6 @@
 # Shine case: simple raw-data memo
 
-**Purpose:** A presentation version that can be reproduced from the two base
+**Purpose:** A presentation memo that can be reproduced from the two base
 tables with straightforward SQL. It keeps the advanced modelling as a clearly
 labelled validation layer rather than making it look like the starting point.
 
@@ -155,3 +155,60 @@ ranking: **26.74% of comparable revenue**, versus **24.06% in April** and
   `sql/streak_analysis.sql`, and `sql/kpi_deep_dive.sql`
 - External market pressure test:
   `docs/research/SHINE_MARKET_RESEARCH_AND_STRATEGY.md`
+
+## Page 4 — Revenue-component heatmap
+
+The heatmap shows cumulative subscription, interchange, banking-fee, and
+deposit-interest revenue per revenue company for every persona through April.
+Each cell divides the cumulative revenue component by the number of distinct
+companies with at least one revenue row during the confirmed period. Darker
+cells therefore indicate more cumulative euros per such company.
+
+The neutral **Total** column on the right is the sum of the four components and
+is used to order personas from highest to lowest cumulative revenue per revenue
+company. It is excluded from the heatmap colour scale because its systematically
+higher values would compress the component colours and make their differences
+harder to see.
+
+Use the Page 1 bars to judge segment scale and this heatmap to understand
+monetization intensity and revenue drivers. The chart does not replace the
+scale view: a small persona can have a high average without representing a
+large total opportunity.
+
+### Limitations
+
+- This is cumulative revenue per revenue company, not a monthly average.
+  Companies with longer observation periods have had more time to accumulate
+  revenue, so tenure can influence the ranking.
+- The inner join excludes companies with no revenue row. The denominator is
+  therefore revenue companies, not all signed-up or activated companies.
+- Small personas can produce unstable averages. Repair Installation has only
+  38 revenue companies and should not be treated as a proven scalable segment.
+- Revenue is not contribution margin, and the heatmap shows association rather
+  than evidence that persona membership caused higher monetization.
+
+**SQL:** Query 9 in `sql/simple_raw_memo_queries.sql`.
+
+## Page 5 — Initial-plan revenue-component heatmap
+
+This page repeats the cumulative revenue-per-revenue-company view by
+`initial_subscription_group`. The four revenue components use the heatmap
+colour scale. The neutral **Total** column is their sum, is excluded from that
+scale, and orders the plans from highest to lowest.
+
+The company count beside each plan is essential context. A plan can have high
+cumulative revenue per revenue company while representing a relatively small
+population and a limited share of total revenue.
+
+### Limitations
+
+- `initial_subscription_group` is the plan at the initial observation and may
+  not be the company's current plan. Plan migrations are unavailable.
+- The metric is cumulative rather than monthly, so company tenure can affect
+  the differences between plans.
+- The inner join excludes companies without a revenue row from the denominator.
+- The comparison is associative. Company size, age, selection, and behaviour
+  may explain the differences; it is not evidence that moving a company to a
+  higher plan would cause its revenue to increase.
+
+**SQL:** Query 10 in `sql/simple_raw_memo_queries.sql`.

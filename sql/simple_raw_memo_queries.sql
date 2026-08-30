@@ -195,6 +195,88 @@ GROUP BY c.persona
 ORDER BY total_revenue DESC;
 
 -- ============================================================
+-- QUERY 9: HEATMAP INPUT — CUMULATIVE REVENUE PER REVENUE COMPANY
+-- ============================================================
+-- A revenue company has at least one revenue row through April. These are
+-- cumulative values, not monthly averages: older companies have more time to
+-- contribute, and companies with no revenue row are excluded by the join.
+SELECT
+    c.persona,
+    ROUND(
+        SUM(r.subscription_revenue)
+        / NULLIF(COUNT(DISTINCT r.company_profile_id), 0),
+        2
+    ) AS subscription_revenue_per_company,
+    ROUND(
+        SUM(r.interchange_revenue)
+        / NULLIF(COUNT(DISTINCT r.company_profile_id), 0),
+        2
+    ) AS interchange_revenue_per_company,
+    ROUND(
+        SUM(r.banking_fees)
+        / NULLIF(COUNT(DISTINCT r.company_profile_id), 0),
+        2
+    ) AS banking_fees_per_company,
+    ROUND(
+        SUM(r.deposit_interest_revenue)
+        / NULLIF(COUNT(DISTINCT r.company_profile_id), 0),
+        2
+    ) AS deposit_interest_revenue_per_company,
+    ROUND(
+        SUM(r.total_revenue)
+        / NULLIF(COUNT(DISTINCT r.company_profile_id), 0),
+        2
+    ) AS total_revenue_per_company,
+    COUNT(DISTINCT r.company_profile_id) AS revenue_companies
+FROM companies c
+JOIN revenue_with_total r
+    ON c.company_profile_id = r.company_profile_id
+WHERE r.revenue_month < DATE '2026-05-01'
+GROUP BY c.persona
+ORDER BY total_revenue_per_company DESC;
+
+-- ============================================================
+-- QUERY 10: INITIAL-PLAN HEATMAP INPUT
+-- ============================================================
+-- The total is shown separately from the heatmap colour scale and is used to
+-- order the rows. `initial_subscription_group` may not be the current plan.
+SELECT
+    c.initial_subscription_group,
+    ROUND(
+        SUM(r.subscription_revenue)
+        / NULLIF(COUNT(DISTINCT r.company_profile_id), 0),
+        2
+    ) AS subscription_revenue_per_company,
+    ROUND(
+        SUM(r.interchange_revenue)
+        / NULLIF(COUNT(DISTINCT r.company_profile_id), 0),
+        2
+    ) AS interchange_revenue_per_company,
+    ROUND(
+        SUM(r.banking_fees)
+        / NULLIF(COUNT(DISTINCT r.company_profile_id), 0),
+        2
+    ) AS banking_fees_per_company,
+    ROUND(
+        SUM(r.deposit_interest_revenue)
+        / NULLIF(COUNT(DISTINCT r.company_profile_id), 0),
+        2
+    ) AS deposit_interest_revenue_per_company,
+    ROUND(
+        SUM(r.total_revenue)
+        / NULLIF(COUNT(DISTINCT r.company_profile_id), 0),
+        2
+    ) AS total_revenue_per_company,
+    COUNT(DISTINCT r.company_profile_id) AS revenue_companies
+FROM companies c
+JOIN revenue_with_total r
+    ON c.company_profile_id = r.company_profile_id
+WHERE r.revenue_month < DATE '2026-05-01'
+  AND c.company_signup_at < DATE '2026-05-01'
+GROUP BY c.initial_subscription_group
+ORDER BY total_revenue_per_company DESC;
+
+-- ============================================================
 -- WHERE TO FIND THE MORE RIGOROUS VERSIONS
 -- ============================================================
 -- Equal-tenure segment ranking and top-20 concentration:

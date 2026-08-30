@@ -1,4 +1,4 @@
-"""Build a three-page Shine memo using only simple base-table queries."""
+"""Build the Shine memo using only simple base-table queries."""
 
 from pathlib import Path
 
@@ -86,6 +86,63 @@ def query_frames():
             WHERE r.revenue_month <= DATE '2026-04-01'
             GROUP BY c.persona
             ORDER BY total_revenue DESC
+            """
+        ).fetchdf()
+        persona_revenue_per_company = connection.execute(
+            """
+            SELECT
+                c.persona,
+                COUNT(DISTINCT r.company_profile_id) AS revenue_companies,
+                SUM(r.subscription_revenue)
+                    / COUNT(DISTINCT r.company_profile_id)
+                    AS subscription_revenue_per_company,
+                SUM(r.interchange_revenue)
+                    / COUNT(DISTINCT r.company_profile_id)
+                    AS interchange_revenue_per_company,
+                SUM(r.banking_fees)
+                    / COUNT(DISTINCT r.company_profile_id)
+                    AS banking_fees_per_company,
+                SUM(r.deposit_interest_revenue)
+                    / COUNT(DISTINCT r.company_profile_id)
+                    AS deposit_interest_revenue_per_company,
+                SUM(r.total_revenue)
+                    / COUNT(DISTINCT r.company_profile_id)
+                    AS total_revenue_per_company,
+                SUM(r.total_revenue) AS total_revenue
+            FROM companies c
+            JOIN revenue_with_total r USING (company_profile_id)
+            WHERE r.revenue_month <= DATE '2026-04-01'
+            GROUP BY c.persona
+            ORDER BY total_revenue DESC
+            """
+        ).fetchdf()
+        plan_revenue_per_company = connection.execute(
+            """
+            SELECT
+                c.initial_subscription_group AS initial_plan,
+                COUNT(DISTINCT r.company_profile_id) AS revenue_companies,
+                SUM(r.subscription_revenue)
+                    / COUNT(DISTINCT r.company_profile_id)
+                    AS subscription_revenue_per_company,
+                SUM(r.interchange_revenue)
+                    / COUNT(DISTINCT r.company_profile_id)
+                    AS interchange_revenue_per_company,
+                SUM(r.banking_fees)
+                    / COUNT(DISTINCT r.company_profile_id)
+                    AS banking_fees_per_company,
+                SUM(r.deposit_interest_revenue)
+                    / COUNT(DISTINCT r.company_profile_id)
+                    AS deposit_interest_revenue_per_company,
+                SUM(r.total_revenue)
+                    / COUNT(DISTINCT r.company_profile_id)
+                    AS total_revenue_per_company,
+                SUM(r.total_revenue) AS total_revenue
+            FROM companies c
+            JOIN revenue_with_total r USING (company_profile_id)
+            WHERE r.revenue_month < DATE '2026-05-01'
+              AND c.company_signup_at < DATE '2026-05-01'
+            GROUP BY c.initial_subscription_group
+            ORDER BY total_revenue_per_company DESC
             """
         ).fetchdf()
         april_plan = connection.execute(
@@ -199,6 +256,8 @@ def query_frames():
         return (
             april_persona,
             cumulative_persona,
+            persona_revenue_per_company,
+            plan_revenue_per_company,
             april_plan,
             cumulative_plan,
             april_mix,
@@ -228,19 +287,23 @@ def make_segment_chart(cumulative_persona, cumulative_plan, output_path):
         color=persona_colors,
         height=0.62,
     )
-    for bar, share in zip(bars, persona["revenue_share_pct"]):
+    for bar, share, average in zip(
+        bars,
+        persona["revenue_share_pct"],
+        persona["revenue_per_revenue_company"],
+    ):
         axes[0].text(
             bar.get_width() + 0.35,
             bar.get_y() + bar.get_height() / 2,
-            f"{share:.1f}%",
+            f"{share:.1f}%  |  €{average:.0f}/company",
             va="center",
-            fontsize=9,
+            fontsize=8.3,
             fontweight="bold",
             color="#17212B",
         )
     axes[0].set_title("Confirmed revenue share by persona", loc="left", fontsize=12, fontweight="bold", color="#102A43")
     axes[0].set_xlabel("Share of cumulative revenue through April", fontsize=9, color="#5E6C76")
-    axes[0].set_xlim(0, max(persona["revenue_share_pct"]) * 1.22)
+    axes[0].set_xlim(0, max(persona["revenue_share_pct"]) * 1.70)
 
     plan_colors = ["#008C8C" if value == "plus" else "#A9C7C7" for value in plan["initial_plan"]]
     bars = axes[1].barh(
@@ -277,12 +340,127 @@ def make_segment_chart(cumulative_persona, cumulative_plan, output_path):
     fig.text(
         0.01,
         0.005,
-        "Bar length = share of confirmed cumulative revenue through April. Plan labels also show cumulative revenue per revenue-producing company. BTP and Plus highlighted.",
+        "Bar length = share of confirmed cumulative revenue through April. Persona and plan labels also show cumulative revenue per revenue-producing company. BTP and Plus highlighted.",
         fontsize=8,
         color="#5E6C76",
     )
     plt.tight_layout(rect=(0, 0.05, 1, 1))
     fig.savefig(output_path, dpi=190, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+
+def make_revenue_per_company_heatmap(
+    segment_revenue_per_company,
+    segment_column,
+    chart_title,
+    output_path,
+    figure_height=8.0,
+):
+    heatmap = segment_revenue_per_company.sort_values(
+        "total_revenue_per_company", ascending=False
+    ).copy()
+    value_columns = [
+        "subscription_revenue_per_company",
+        "interchange_revenue_per_company",
+        "banking_fees_per_company",
+        "deposit_interest_revenue_per_company",
+    ]
+    column_labels = [
+        "Subscription",
+        "Interchange",
+        "Banking fees",
+        "Deposit interest",
+    ]
+    values = heatmap[value_columns].to_numpy()
+    totals = heatmap["total_revenue_per_company"].to_numpy()
+    row_labels = [
+        f"{clean_label(getattr(row, segment_column))}  "
+        f"(n={int(row.revenue_companies):,})"
+        for row in heatmap.itertuples()
+    ]
+
+    fig, axis = plt.subplots(figsize=(11.3, figure_height))
+    fig.patch.set_facecolor("white")
+    image = axis.imshow(values, cmap="GnBu", aspect="auto")
+    total_x = 4.25
+    axis.set_xticks(
+        [0, 1, 2, 3, total_x],
+        [*column_labels, "Total"],
+    )
+    axis.set_xlim(-0.5, 4.65)
+    axis.get_xticklabels()[-1].set_fontweight("bold")
+    axis.get_xticklabels()[-1].set_color("#102A43")
+    axis.set_yticks(range(len(row_labels)), row_labels)
+    axis.tick_params(
+        axis="x",
+        labelrotation=0,
+        labelsize=10,
+        length=0,
+        pad=8,
+        top=True,
+        labeltop=True,
+        bottom=False,
+        labelbottom=False,
+    )
+    axis.tick_params(axis="y", labelsize=8.5, length=0, pad=7)
+    axis.set_title(
+        chart_title,
+        loc="left",
+        fontsize=14,
+        fontweight="bold",
+        color="#102A43",
+        pad=44,
+    )
+    axis.set_xlabel(
+        "Revenue component — confirmed period through April 2026",
+        fontsize=9,
+        color="#5E6C76",
+        labelpad=10,
+    )
+
+    threshold = (values.min() + values.max()) / 2
+    for row_index in range(values.shape[0]):
+        for column_index in range(values.shape[1]):
+            value = values[row_index, column_index]
+            axis.text(
+                column_index,
+                row_index,
+                f"€{value:.0f}",
+                ha="center",
+                va="center",
+                fontsize=8.7,
+                fontweight="bold",
+                color="white" if value > threshold else "#17212B",
+            )
+        axis.text(
+            total_x,
+            row_index,
+            f"€{totals[row_index]:.0f}",
+            ha="center",
+            va="center",
+            fontsize=9.2,
+            fontweight="bold",
+            color="#102A43",
+        )
+
+    axis.axvline(3.62, color="#A9B4BC", linewidth=1.0)
+
+    colorbar = fig.colorbar(image, ax=axis, fraction=0.035, pad=0.025)
+    colorbar.set_label("Cumulative € per revenue company", fontsize=9)
+    colorbar.ax.tick_params(labelsize=8)
+    colorbar.outline.set_visible(False)
+    for spine in axis.spines.values():
+        spine.set_visible(False)
+
+    fig.text(
+        0.01,
+        0.005,
+        "n = companies with at least one revenue row through April. Rows are sorted by Total descending; Total is excluded from the heatmap colour scale.",
+        fontsize=8,
+        color="#5E6C76",
+    )
+    plt.tight_layout(rect=(0, 0.035, 1, 1))
+    fig.savefig(output_path, dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
 
@@ -638,12 +816,135 @@ def build_page_three(document):
     add_run(p, "docs/research/SHINE_MARKET_RESEARCH_AND_STRATEGY.md", color=MID_GREY, size=7.4)
 
 
+def build_page_four(document, heatmap_chart):
+    add_page_title(
+        document,
+        "Page 4 • Revenue-component heatmap",
+        "BTP combines broad scale with strong cumulative monetization",
+        "Simple raw-data view • Cumulative through April 2026 • May excluded",
+    )
+
+    p = document.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(2)
+    p.paragraph_format.space_after = Pt(2)
+    p.add_run().add_picture(str(heatmap_chart), width=Cm(16.9))
+
+    table = document.add_table(rows=1, cols=2)
+    table.autofit = False
+    table.columns[0].width = Cm(9.1)
+    table.columns[1].width = Cm(9.1)
+    left, right = table.rows[0].cells
+    for cell in (left, right):
+        set_cell_margins(cell, top=85, start=105, bottom=85, end=105)
+
+    set_cell_shading(left, LIGHT_BLUE)
+    add_cell_text(left, "How to read it", bold=True, color=TEAL, size=8.6)
+    add_cell_text(
+        left,
+        "Each coloured cell is the cumulative sum of that revenue component divided by distinct companies with at least one revenue row through April. Darker cells mean more cumulative euros per such company.",
+        size=7.6,
+    )
+    add_cell_text(
+        left,
+        "The neutral Total column is the sum of the four components and determines the descending row order. It is deliberately excluded from the colour scale so it does not wash out the component differences.",
+        size=7.6,
+    )
+    add_cell_text(
+        left,
+        "Use Page 1 revenue-share bars for segment scale; use this heatmap to compare monetization intensity and identify which revenue types drive it.",
+        size=7.6,
+        space_after=0,
+    )
+
+    set_cell_shading(right, LIGHT_GREY)
+    add_cell_text(right, "Limitations", bold=True, color=RED, size=8.6)
+    add_cell_text(
+        right,
+        "This is cumulative revenue per revenue company, not a monthly average. Older companies have had more months to accumulate revenue, so tenure can influence the ranking.",
+        size=7.6,
+    )
+    add_cell_text(
+        right,
+        "The inner join excludes companies with no revenue row. Small personas can also be volatile—especially Repair Installation (n=38). Revenue is not profit and does not prove that persona membership caused performance.",
+        size=7.6,
+        space_after=0,
+    )
+    set_table_borders(table, color=WHITE, size="7")
+
+    p = document.add_paragraph()
+    p.paragraph_format.space_before = Pt(3)
+    p.paragraph_format.space_after = Pt(0)
+    add_run(p, "Reproducible SQL: ", bold=True, color=TEAL, size=7.8)
+    add_run(p, "Query 9 in sql/simple_raw_memo_queries.sql", color=BLACK, size=7.8)
+
+
+def build_page_five(document, heatmap_chart):
+    add_page_title(
+        document,
+        "Page 5 • Initial-plan revenue heatmap",
+        "Business has the highest cumulative revenue per revenue company—but limited scale",
+        "Simple raw-data view • Initial plan, not necessarily current plan • May excluded",
+    )
+
+    p = document.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(2)
+    p.paragraph_format.space_after = Pt(4)
+    p.add_run().add_picture(str(heatmap_chart), width=Cm(16.9))
+
+    table = document.add_table(rows=1, cols=2)
+    table.autofit = False
+    table.columns[0].width = Cm(9.1)
+    table.columns[1].width = Cm(9.1)
+    left, right = table.rows[0].cells
+    for cell in (left, right):
+        set_cell_margins(cell, top=90, start=105, bottom=90, end=105)
+
+    set_cell_shading(left, LIGHT_BLUE)
+    add_cell_text(left, "How to read it", bold=True, color=TEAL, size=8.6)
+    add_cell_text(
+        left,
+        "Each coloured cell is cumulative component revenue divided by distinct revenue companies in that initial plan. The neutral Total column sums the four components and sets the descending row order.",
+        size=7.7,
+    )
+    add_cell_text(
+        left,
+        "Total is excluded from the colour scale. Company count (n) provides the scale check: a high per-company value in a small group is not automatically the largest opportunity.",
+        size=7.7,
+        space_after=0,
+    )
+
+    set_cell_shading(right, LIGHT_GREY)
+    add_cell_text(right, "Limitations", bold=True, color=RED, size=8.6)
+    add_cell_text(
+        right,
+        "The field records the initial subscription group and may not represent the current plan. Differences may reflect company age, selection, size, or behaviour—not a causal effect of the plan.",
+        size=7.7,
+    )
+    add_cell_text(
+        right,
+        "Values are cumulative, so older companies have more exposure. The inner join also excludes companies with no revenue row. This cannot justify an upsell without current-plan, migration, margin, and experiment data.",
+        size=7.7,
+        space_after=0,
+    )
+    set_table_borders(table, color=WHITE, size="7")
+
+    p = document.add_paragraph()
+    p.paragraph_format.space_before = Pt(4)
+    p.paragraph_format.space_after = Pt(0)
+    add_run(p, "Reproducible SQL: ", bold=True, color=TEAL, size=7.8)
+    add_run(p, "Query 10 in sql/simple_raw_memo_queries.sql", color=BLACK, size=7.8)
+
+
 def build_document():
     ASSET_DIR.mkdir(parents=True, exist_ok=True)
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     (
         april_persona,
         cumulative_persona,
+        persona_revenue_per_company,
+        plan_revenue_per_company,
         _april_plan,
         cumulative_plan,
         april_mix,
@@ -653,13 +954,28 @@ def build_document():
     ) = query_frames()
     chart = ASSET_DIR / "simple_raw_segment_view.png"
     trend_decline_chart = ASSET_DIR / "simple_raw_trend_and_decline.png"
+    heatmap_chart = ASSET_DIR / "simple_raw_revenue_per_company_heatmap.png"
+    plan_heatmap_chart = ASSET_DIR / "simple_raw_plan_revenue_per_company_heatmap.png"
     make_segment_chart(cumulative_persona, cumulative_plan, chart)
     make_trend_decline_chart(monthly_revenue, decline, trend_decline_chart)
+    make_revenue_per_company_heatmap(
+        persona_revenue_per_company,
+        "persona",
+        "Cumulative revenue per revenue company by persona",
+        heatmap_chart,
+    )
+    make_revenue_per_company_heatmap(
+        plan_revenue_per_company,
+        "initial_plan",
+        "Cumulative revenue per revenue company by initial plan",
+        plan_heatmap_chart,
+        figure_height=4.7,
+    )
 
     document = Document()
     configure_document(document)
     document.core_properties.title = "Shine — Simple raw-data revenue memo"
-    document.core_properties.subject = "Three-page memo using base tables and simple SQL"
+    document.core_properties.subject = "Simple memo using base tables and straightforward SQL"
     build_page_one(
         document,
         chart,
@@ -679,6 +995,10 @@ def build_document():
     )
     document.add_page_break()
     build_page_three(document)
+    document.add_page_break()
+    build_page_four(document, heatmap_chart)
+    document.add_page_break()
+    build_page_five(document, plan_heatmap_chart)
     document.save(OUTPUT_FILE)
     return OUTPUT_FILE
 

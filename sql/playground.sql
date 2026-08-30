@@ -25,29 +25,11 @@
 -- GROUP BY r.revenue_month, c.persona
 -- ORDER BY r.revenue_month, total_revenue DESC;
 
-SELECT 
-    c.persona,
-    ROUND(SUM(r.total_revenue), 2) AS total_revenue,
-    ROUND(SUM(r.total_revenue) / SUM(SUM(r.total_revenue)) OVER (), 4) AS revenue_share,
-    ROUND(SUM(r.total_revenue) / NULLIF(COUNT(DISTINCT r.company_profile_id), 0), 2) AS revenue_per_revenue_company
-FROM companies c
-JOIN revenue_with_total r 
-    ON c.company_profile_id = r.company_profile_id
-WHERE 
-    r.revenue_month < DATE '2026-05-01'
-    AND c.company_signup_at < DATE '2026-05-01'
-GROUP BY c.persona    
-ORDER BY total_revenue DESC;
-
-
-
 -- SELECT 
 --     c.persona,
---     ROUND(SUM(subscription_revenue), 2) AS subscription_revenue,
---     ROUND(SUM(interchange_revenue), 2) AS interchange_revenue,
---     ROUND(SUM(banking_fees), 2) AS banking_fees,
---     ROUND(SUM(deposit_interest_revenue), 2) AS deposit_interest_revenue,
---     ROUND(SUM(total_revenue), 2) AS total_revenue
+--     ROUND(SUM(r.total_revenue), 2) AS total_revenue,
+--     ROUND(SUM(r.total_revenue) / SUM(SUM(r.total_revenue)) OVER (), 4) AS revenue_share,
+--     ROUND(SUM(r.total_revenue) / NULLIF(COUNT(DISTINCT r.company_profile_id), 0), 2) AS revenue_per_revenue_company
 -- FROM companies c
 -- JOIN revenue_with_total r 
 --     ON c.company_profile_id = r.company_profile_id
@@ -56,6 +38,23 @@ ORDER BY total_revenue DESC;
 --     AND c.company_signup_at < DATE '2026-05-01'
 -- GROUP BY c.persona    
 -- ORDER BY total_revenue DESC;
+
+
+
+SELECT 
+    c.initial_subscription_group,
+    ROUND(SUM(r.subscription_revenue), 2)/COUNT(DISTINCT r.company_profile_id) AS subscription_revenue,
+    ROUND(SUM(r.interchange_revenue), 2)/COUNT(DISTINCT r.company_profile_id) AS interchange_revenue,
+    ROUND(SUM(r.banking_fees), 2)/COUNT(DISTINCT r.company_profile_id) AS banking_fees,
+    ROUND(SUM(r.deposit_interest_revenue), 2)/COUNT(DISTINCT r.company_profile_id) AS deposit_interest_revenue
+FROM companies c
+JOIN revenue_with_total r 
+    ON c.company_profile_id = r.company_profile_id
+WHERE 
+    r.revenue_month < DATE '2026-05-01'
+    AND c.company_signup_at < DATE '2026-05-01'
+GROUP BY 1    
+ORDER BY 5 desc;
 
 -- Other ideas to try (uncomment one at a time):
 
