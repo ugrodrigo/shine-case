@@ -1,5 +1,5 @@
 -- Cohort-analysis playground
--- Run with: python run_query.py sql/cohort_playground.sql
+-- Run with: python scripts/run_query.py sql/cohort_playground.sql
 --
 -- Cohorts use activation_month. Customer age is months_since_activation.
 -- May is excluded through the confirmed April cutoff.

@@ -1,5 +1,5 @@
 -- Account-health momentum playground
--- Run with: python run_query.py sql/account_health_playground.sql
+-- Run with: python scripts/run_query.py sql/account_health_playground.sql
 --
 -- This sensitivity tests revenue-decline thresholds among companies that are
 -- revenue-active at the April cutoff. The baseline is the median of the three

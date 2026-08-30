@@ -1,0 +1,9 @@
+revenue_month,analysis_status,revenue_companies,subscription_revenue,interchange_revenue,banking_fees,deposit_interest_revenue,total_revenue,revenue_per_revenue_company,total_revenue_mom_growth_pct,subscription_share_pct,interchange_share_pct,banking_fees_share_pct,deposit_interest_share_pct
+2025-10-01,confirmed analysis,1193,591.01,11831.57,19171.74,4010.56,35604.88,29.84,,1.7,33.2,53.8,11.3
+2025-11-01,confirmed analysis,3578,20724.60,43225.41,29262.48,30648.29,123860.78,34.62,247.9,16.7,34.9,23.6,24.7
+2025-12-01,confirmed analysis,6149,42659.87,91128.73,30915.64,58393.16,223097.39,36.28,80.1,19.1,40.8,13.9,26.2
+2026-01-01,confirmed analysis,8646,66191.71,135766.16,28159.52,88853.31,318970.70,36.89,43.0,20.8,42.6,8.8,27.9
+2026-02-01,confirmed analysis,11595,91984.12,210471.23,38172.00,125495.64,466122.99,40.2,46.1,19.7,45.2,8.2,26.9
+2026-03-01,confirmed analysis,13623,114819.25,215552.79,53495.06,161230.14,545097.24,40.01,16.9,21.1,39.5,9.8,29.6
+2026-04-01,confirmed analysis,16130,134241.55,267904.45,52530.12,183401.48,638077.60,39.56,17.1,21.0,42.0,8.2,28.7
+2026-05-01,provisional sensitivity,17433,145067.65,280626.93,47357.18,195534.54,668586.30,38.35,4.8,21.7,42.0,7.1,29.2

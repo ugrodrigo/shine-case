@@ -1,6 +1,6 @@
 -- Shine Senior Data Analyst case
 -- Focused exploratory analysis in DuckDB SQL.
--- Run from the project root with: python run_eda.py
+-- Run from the project root with: python scripts/run_eda.py
 
 -- ============================================================
 -- 1. LOAD AND TYPE THE SOURCE DATA

@@ -1,5 +1,5 @@
 -- Revenue-concentration playground
--- Run with: python run_query.py sql/concentration_playground.sql
+-- Run with: python scripts/run_query.py sql/concentration_playground.sql
 
 -- Profile personas in the preferred top 20% revenue group.
 -- This ranks companies on ages 1-3: their first three complete calendar

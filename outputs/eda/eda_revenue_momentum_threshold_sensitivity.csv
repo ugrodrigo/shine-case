@@ -1,0 +1,7 @@
+relative_decline_threshold,minimum_eur_decline,eligible_continuously_active_companies,declining_companies,declining_company_share_pct,eligible_top_20pct_companies,declining_top_20pct_companies,declining_top_20pct_company_share_pct
+0.20,0.00,5408,1380,25.52,2124,644,30.32
+0.30,0.00,5408,1091,20.17,2124,511,24.06
+0.40,0.00,5408,881,16.29,2124,393,18.5
+0.20,10.00,5408,776,14.35,2124,592,27.87
+0.30,10.00,5408,673,12.44,2124,493,23.21
+0.40,10.00,5408,544,10.06,2124,382,17.98

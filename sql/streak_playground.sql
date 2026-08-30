@@ -1,5 +1,5 @@
 -- Revenue-streak playground
--- Run with: python run_query.py sql/streak_playground.sql
+-- Run with: python scripts/run_query.py sql/streak_playground.sql
 
 -- Rank personas at the same customer age. Change the minimum sample or switch
 -- segment_level to 'initial_plan' and select initial_subscription_group.

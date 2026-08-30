@@ -1,6 +1,6 @@
 -- DuckDB playground for the Shine case
 -- Edit this file, save it, then run:
---     python run_query.py
+--     python scripts/run_query.py
 --
 -- Available tables:
 --   companies
