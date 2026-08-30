@@ -28,8 +28,10 @@ shine-case/
 ## Main deliverables
 
 - `outputs/presentation/Shine_Case_3_Page_Memo.docx`
+- `outputs/presentation/Shine_Case_Simple_RAW_3_Page_Memo.docx`
 - `outputs/research/Shine_External_Market_Research_and_Revised_Strategy.docx`
 - `docs/presentation/FINAL_PRESENTATION_KPI_FRAMEWORK.md`
+- `docs/presentation/SIMPLE_RAW_MEMO.md`
 - `docs/research/SHINE_MARKET_RESEARCH_AND_STRATEGY.md`
 - `docs/data-quality/dataset-data-quality-questions.md`
 
@@ -59,6 +61,7 @@ Rebuild the Word documents:
 
 ```powershell
 python scripts/build_final_doc.py
+python scripts/build_simple_raw_memo.py
 python scripts/build_market_research_doc.py
 ```
 
