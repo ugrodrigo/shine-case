@@ -7,11 +7,13 @@
 
 ## Recommended answer
 
-The biggest immediate opportunity is to **protect and replicate Shine's
-high-value revenue behavior**, particularly among BTP and Plus companies. The
-main risks are concentration in a relatively small, usage- and balance-driven
-pool and material revenue deterioration within some still-active accounts—not
-evidence of confirmed broad customer churn.
+The biggest dataset-demonstrated opportunity is to **protect and replicate
+Shine's high-value revenue behavior**, using BTP as a bounded vertical test and
+Plus as the strongest initial-plan signal. External research supports product
+fit with small BTP companies, but it does not establish that BTP is the largest
+untapped market. The main measured risks remain concentration in a relatively
+small, usage- and balance-driven pool and material revenue deterioration within
+some still-active accounts—not evidence of confirmed broad customer churn.
 
 Evidence:
 
@@ -38,37 +40,67 @@ Evidence:
 The recommended action is therefore a targeted high-value growth and protection
 program, not a broad untargeted churn campaign:
 
-1. Test deeper product adoption within large, high-potential segments—especially
-   BTP and Plus—using card usage, balances, and relevant paid features as levers.
+1. Test a **BTP-fit activation and monetization journey** among independent
+   tradespeople and small crews whose needs match Shine's product. Candidate
+   levers include electronic invoicing, payment collection, expense controls,
+   cash-flow signals, and relevant partner services; product-usage data must
+   determine the final intervention.
 2. Protect the existing top-value population with a material-revenue-decline
    diagnostic, first-missing-revenue-month trigger, and recovery monitoring.
-3. Measure incremental revenue and account health against a control group before
-   scaling. Initial-plan associations do not prove that changing plans causes
-   higher revenue.
+3. Measure incremental contribution and account health against a control group
+   before scaling within BTP or transferring the workflow to other personas.
+   Initial-plan and persona associations do not prove causal product effects.
+
+External pressure test:
+
+- France has 650,207 economically active construction legal entities, and the
+  sector is predominantly artisan-sized—supporting a material BTP addressable
+  base ([INSEE](https://www.insee.fr/fr/statistiques/2011101?geo=FRANCE-1-1),
+  [FFB](https://www.ffbatiment.fr/le-batiment-en-chiffres)).
+- Shine already markets a dedicated BTP proposition, so observed strength could
+  partly reflect existing targeting or selection rather than unused headroom
+  ([Shine BTP](https://www.shine.fr/btp/)).
+- Artisan building activity fell 3.8% in 2025 and remained down 1.5% year on
+  year in Q1 2026; Shine cannot directly offer an overdraft, and advanced BTP
+  invoicing needs are only partly supported
+  ([CAPEB](https://www.capeb.fr/www/capeb/media/national/note-1-trimestre-2026-v3.pdf),
+  [Shine overdraft policy](https://help.shine.fr/fr/articles/1179200-compte-a-decouvert),
+  [BTP invoicing limitations](https://help.shine.fr/shine-facture/fr/articles/16596228-artisans-du-btp-facturer-l-avancement-de-vos-chantiers-situations-de-travaux)).
+- Electronic-invoice reception becomes mandatory for all French businesses on
+  1 September 2026. Shine is an accredited platform and includes the service in
+  every plan, making it a timely cross-persona workflow entry point rather than
+  a BTP-only benefit
+  ([French reform calendar](https://www.economie.gouv.fr/tout-savoir-sur-la-facturation-electronique-pour-les-entreprises),
+  [Shine accreditation](https://help.shine.fr/fr/articles/11459160-shine-plateforme-agreee-de-facturation-electronique)).
 
 ## Ranked initiatives for next quarter
 
-### 1. BTP adoption and monetization experiment
+### 1. BTP-fit activation and monetization experiment
 
-Position: run a controlled experiment designed to move suitable BTP companies
-toward the product behaviors associated with higher revenue. Do not assume that
-a plan upsell is the lever; first identify the relevant card, balance, payment,
-or feature-adoption behavior with product data.
+Position: treat BTP as the strongest demonstrated vertical and a test bed for a
+repeatable workflow—not as an automatically scalable acquisition audience. Run
+a controlled experiment among suitable independent tradespeople and small crews.
+Do not assume that plan upsell is the lever; first identify the relevant
+invoicing, collection, card, balance, expense-control, or partner-service gap
+with product data.
 
 Why this ranks first:
 
-- BTP is the largest scalable persona across the full comparable population:
-  26.74% of revenue, 1,642 companies, and EUR 178.85 average revenue—1.48x the
-  overall company average.
+- BTP is the strongest demonstrated persona across the full comparable
+  population: 26.74% of revenue, 1,642 companies, and EUR 178.85 average
+  revenue—1.48x the overall company average.
 - BTP remains first without relying on the top-20 cutoff. The top-20 sensitivity
   strengthens rather than creates the signal: BTP rises to 30.28% of that pool's
   revenue.
 - Plus is the strongest scalable plan association: 28.56% of full comparable
   revenue and 2.02x average revenue/company. This suggests proposition and
   product behavior matter, but does not establish causation.
-- BTP is both the main scalable opportunity and an early-warning hotspot: 150
+- BTP is both the lead dataset-backed test segment and an early-warning hotspot: 150
   of 515 assessable cumulative high-value BTP accounts are Watch (29.13%), with
   an observed EUR 13.87k median-baseline-to-April monthly gap.
+- External evidence supports fit but limits extrapolation: the addressable base
+  is large and small-business-heavy, while sector contraction, the lack of a
+  direct overdraft, and advanced invoicing needs narrow the ideal customer.
 
 Magnitude that can be stated:
 
@@ -85,7 +117,9 @@ Magnitude that cannot yet be stated:
 - How many current BTP companies are eligible for a specific product action.
 
 Those require current-plan and product-usage data, treatment cost, margin, and a
-causal experiment.
+causal experiment. They also require BTP acquisition channel, campaign spend,
+approval rate, CAC, and existing market penetration to separate untapped demand
+from the result of Shine's current BTP strategy.
 
 ### 2. Revenue-decline and first-gap protection for high-value companies
 
@@ -491,24 +525,24 @@ audit trail, and alert owners when completeness or reconciliation tests fail.
 
 Headline:
 
-> Across the full comparable base, BTP is the strongest scalable persona and
-> Plus the strongest scalable plan signal; the top 20% concentration is a
-> secondary risk lens.
+> Across the full comparable base, BTP is the strongest demonstrated persona
+> and Plus the strongest initial-plan signal; external evidence supports a
+> bounded BTP-fit test, not an assumption of unlimited scalability.
 
 Use:
 
 - Rank personas and initial plans by share of **all** comparable revenue; use
   bar color for revenue/company versus the overall average and label `N`.
 - Keep `20% of companies → 70% of comparable revenue` as a secondary KPI.
-- Contrast BTP scale, Plus scalability, Business efficiency/small size, and
-  Start scale/proportionality.
+- Contrast BTP scale and external constraints, Plus efficiency, Business
+  efficiency/small size, and Start scale/proportionality.
 - State the position: protect and replicate the high-value pool.
 
 ### Page 2 — Ranked decisions and rejected alternatives
 
 Headline:
 
-> Rank 1: BTP adoption experiment. Rank 2: revenue-decline and first-gap protection.
+> Rank 1: BTP-fit activation experiment. Rank 2: revenue-decline and first-gap protection.
 
 Use:
 
@@ -523,8 +557,8 @@ Use:
 
 ### Page 3 — Prove the lever and make the metrics trustworthy
 
-- Summarize the randomized BTP test, primary metric, guardrails, and success
-  criterion.
+- Summarize the randomized BTP-fit test, primary metric, guardrails, success
+  criterion, and rule for transfer to other personas.
 - List the three validations: missing-row semantics/completeness, business
   definitions/effective-dated plan, and KYB/privacy permission.
 - Add the production engine in one line: governed company-month fact → versioned
@@ -547,6 +581,11 @@ Use:
 
 ## Files supporting the presentation
 
+- `SHINE_MARKET_RESEARCH_AND_STRATEGY.md`: source-linked external pressure test
+  covering Shine's model, competitors, BTP market limits, e-invoicing, and the
+  revised strategic recommendation.
+- `Shine_External_Market_Research_and_Revised_Strategy.docx`: formatted Word
+  version of the external research note with clickable references.
 - `sql/presentation_kpis.sql`: formal account-health classification.
 - `sql/account_health_playground.sql`: editable decline-threshold sensitivity.
 - `eda_outputs/eda_company_revenue_momentum_at_cutoff.csv`: company-level

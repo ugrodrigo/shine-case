@@ -13,6 +13,7 @@ from docx.enum.table import WD_ALIGN_VERTICAL, WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.shared import Cm, Inches, Pt, RGBColor
 
 
@@ -101,6 +102,31 @@ def add_run(paragraph, text, *, bold=False, color=BLACK, size=9.2, italic=False)
     run.font.size = Pt(size)
     run.font.color.rgb = RGBColor.from_string(color)
     return run
+
+
+def add_hyperlink(paragraph, text, url, *, color=TEAL, size=7.2):
+    """Add a clickable external hyperlink to a paragraph."""
+    relationship_id = paragraph.part.relate_to(url, RT.HYPERLINK, is_external=True)
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), relationship_id)
+    run = OxmlElement("w:r")
+    properties = OxmlElement("w:rPr")
+    run_color = OxmlElement("w:color")
+    run_color.set(qn("w:val"), color)
+    properties.append(run_color)
+    underline = OxmlElement("w:u")
+    underline.set(qn("w:val"), "single")
+    properties.append(underline)
+    font_size = OxmlElement("w:sz")
+    font_size.set(qn("w:val"), str(int(size * 2)))
+    properties.append(font_size)
+    run.append(properties)
+    text_node = OxmlElement("w:t")
+    text_node.text = text
+    run.append(text_node)
+    hyperlink.append(run)
+    paragraph._p.append(hyperlink)
+    return hyperlink
 
 
 def add_body(document, text, *, bold_prefix=None, size=9.2, space_after=3, color=BLACK):
@@ -589,14 +615,14 @@ def build_page_one(document: Document, ranking_chart: Path) -> None:
     add_page_title(
         document,
         "Page 1 • Position and magnitude",
-        "Segment rankings point to BTP and Plus—not one universal winner",
+        "BTP is the strongest demonstrated vertical—not unlimited market headroom",
         "Confirmed analysis through April 2026 • May excluded because signup coverage is truncated",
     )
     add_callout(
         document,
-        "Across all 9,088 comparable companies, BTP contributes 26.74% of revenue and Start "
-        "44.64% by plan; Plus generates 2.02× average revenue per company. Separately, the top "
-        "20% generates 70.24%—a concentration signal, not the segment-ranking basis.",
+        "Across all 9,088 comparable companies, BTP contributes 26.74% of revenue and Plus "
+        "generates 2.02× average revenue/company. External evidence supports BTP product fit, "
+        "but sector and product constraints require a bounded causal test before scaling.",
     )
     add_kpi_strip(
         document,
@@ -643,11 +669,11 @@ def build_page_one(document: Document, ranking_chart: Path) -> None:
     set_cell_shading(opportunity, LIGHT_BLUE)
     set_cell_shading(risk, LIGHT_GREY)
     add_small_label(opportunity, "Opportunity", TEAL)
-    add_cell_text(opportunity, "BTP leads persona scale and efficiency: 26.74% of all revenue and 1.48× average revenue/company.", bold=True)
-    add_cell_text(opportunity, "Plus contributes 28.56% of all plan revenue at 2.02× average revenue/company.", size=8.2)
+    add_cell_text(opportunity, "BTP leads demonstrated persona scale and efficiency: 26.74% of revenue and 1.48× average revenue/company.", bold=True)
+    add_cell_text(opportunity, "France has a large artisan BTP base; Shine already offers a dedicated BTP workflow.", size=8.2)
     add_small_label(risk, "Risk", RED)
-    add_cell_text(risk, "Business reaches 3.22× average revenue/company but contributes only 6.95% of revenue (N=196).", bold=True)
-    add_cell_text(risk, "Start contributes the most revenue (44.64%) through scale, at approximately average revenue/company (1.01×).", size=8.2)
+    add_cell_text(risk, "BTP activity contracted in 2025; Shine cannot directly offer overdrafts and advanced BTP invoicing is only partly supported.", bold=True)
+    add_cell_text(risk, "Business reaches 3.22× average revenue/company but contributes only 6.95% (N=196); it is not the lead bet.", size=8.2)
     set_table_borders(table, color=WHITE, size="8")
 
     add_heading(document, "How to read the ranking", level=2, space_before=3)
@@ -676,8 +702,8 @@ def build_page_one(document: Document, ranking_chart: Path) -> None:
     add_run(p, "Decision: ", bold=True, color=TEAL, size=9.0)
     add_run(
         p,
-        "prioritize a controlled BTP adoption test, with Plus as the strongest scalable plan signal. "
-        "Treat the 70/20 result as concentration context, not the segment selection rule.",
+        "prioritize a controlled BTP-fit activation test, with Plus as the strongest initial-plan signal. "
+        "Scale only on incremental contribution; treat 70/20 as secondary concentration context.",
         size=9.0,
     )
 
@@ -717,10 +743,10 @@ def build_page_two(document: Document, health_chart: Path) -> None:
     add_initiative_card(
         document,
         1,
-        "BTP adoption & monetization experiment",
-        "Replicate the product behaviors associated with high value; do not assume plan upsell is the lever.",
+        "BTP-fit activation & monetization experiment",
+        "Test a vertical workflow with suitable tradespeople and small crews; do not assume broad BTP acquisition or plan upsell is the lever.",
         "BTP contributes 26.74% of all comparable revenue (N=1,642; €178.85/company; 1.48× overall). In the mature BTP base, 71.07% are Healthy and 15.55% Watch.",
-        "No current plan, product-use, cost, or margin data. Uplift cannot be sized in euros before a causal test.",
+        "Existing BTP targeting, sector contraction, financing needs, and product limits cap extrapolation. No CAC, margin, current-plan, or product-use data.",
         TEAL,
     )
     add_initiative_card(
@@ -732,6 +758,19 @@ def build_page_two(document: Document, health_chart: Path) -> None:
         "The decline threshold is an analytical assumption, not causal loss. Product usage is missing, so diagnose the driver before outreach.",
         AMBER,
     )
+
+    external = document.add_paragraph()
+    external.paragraph_format.space_before = Pt(1)
+    external.paragraph_format.space_after = Pt(1)
+    add_run(external, "External pressure test: ", bold=True, color=TEAL, size=7.1)
+    add_run(external, "large artisan base and a dedicated Shine offer support fit; BTP contraction, no direct overdraft, and advanced invoicing limits narrow the ideal customer. ", size=7.1, color=MID_GREY)
+    add_hyperlink(external, "INSEE", "https://www.insee.fr/fr/statistiques/2011101?geo=FRANCE-1-1", size=7.1)
+    add_run(external, " • ", size=7.1, color=MID_GREY)
+    add_hyperlink(external, "Shine BTP", "https://www.shine.fr/btp/", size=7.1)
+    add_run(external, " • ", size=7.1, color=MID_GREY)
+    add_hyperlink(external, "CAPEB", "https://www.capeb.fr/www/capeb/media/national/note-1-trimestre-2026-v3.pdf", size=7.1)
+    add_run(external, " • ", size=7.1, color=MID_GREY)
+    add_hyperlink(external, "Product limits", "https://help.shine.fr/shine-facture/fr/articles/16596228-artisans-du-btp-facturer-l-avancement-de-vos-chantiers-situations-de-travaux", size=7.1)
 
     add_heading(document, "Health by segment: activated by Dec 2025 (N=6,337)", level=2, space_before=2)
     p = document.add_paragraph()
@@ -787,16 +826,16 @@ def build_page_three(document: Document) -> None:
         "Association identifies where to test; randomisation establishes whether the lever works",
     )
 
-    add_heading(document, "Lead experiment: BTP product adoption", level=2, space_before=0)
+    add_heading(document, "Lead experiment: BTP-fit workflow activation", level=2, space_before=0)
     table = document.add_table(rows=5, cols=2)
     table.autofit = False
     table.columns[0].width = Cm(4.0)
     table.columns[1].width = Cm(14.3)
     experiment = [
-        ("Hypothesis", "A single, customer-appropriate product-adoption intervention causes incremental recognised revenue without worsening customer, operational, risk, or fairness outcomes."),
-        ("Eligibility & design", "Freeze eligibility using a pre-period; use revenue-active BTP below a pre-defined high-value threshold; randomise treatment vs business-as-usual; stratify by pre-revenue, cohort age, current plan and usage; analyse intention-to-treat."),
+        ("Hypothesis", "A BTP-specific workflow around e-invoicing, collection, expense control, cash-flow signals, or relevant partner services causes incremental recognised revenue without worsening guardrails."),
+        ("Eligibility & design", "Use product need—not persona alone—to identify suitable tradespeople and small crews; freeze eligibility in a pre-period; randomise treatment vs business-as-usual; stratify by pre-revenue, cohort age, current plan and usage; analyse intention-to-treat."),
         ("Primary metric", "Incremental mean total revenue per eligible company over 90 days. Report bootstrap confidence intervals plus median and winsorised sensitivities because revenue is highly skewed."),
-        ("Success", "Scale only if the pre-registered interval supports positive uplift above fully loaded treatment cost, with no material guardrail deterioration. Power the test after final eligibility, cost and variance are known."),
+        ("Success", "Scale within BTP only if the pre-registered interval supports uplift above fully loaded treatment cost with no guardrail deterioration. Test transferability separately before expanding to other personas."),
         ("Guardrails", "Closures, complaints, support contacts, fraud/AML/risk outcomes, fairness, operational failures, and negative-fee adjustments."),
     ]
     for idx, (label, value) in enumerate(experiment):
@@ -818,7 +857,7 @@ def build_page_three(document: Document) -> None:
         validation.columns[idx].width = Cm(6.1)
     validations = [
         ("1", "Completeness", "Confirm missing row = zero; reconcile to Finance; keep May out until signup coverage is explained."),
-        ("2", "Business meaning", "Validate activation, closure, cancellation, revenue recognition, current plan and persona history."),
+        ("2", "Selection & meaning", "Validate BTP definition, acquisition channel/spend, CAC, approval, current plan, persona history and product use."),
         ("3", "KYB & privacy", "Confirm permitted persona use; minimise data; suppress small cells; never use this for adverse eligibility decisions."),
     ]
     for idx, (number, title, detail) in enumerate(validations):
@@ -889,6 +928,16 @@ def build_page_three(document: Document) -> None:
     p.paragraph_format.space_after = Pt(0)
     add_run(p, "Not concluded: ", bold=True, color=RED, size=7.7)
     add_run(p, "true churn, forecast LTV, causal plan effect, CAC/payback, profitability, or complete May performance.", size=7.7, color=MID_GREY)
+    p = document.add_paragraph()
+    p.paragraph_format.space_after = Pt(0)
+    add_run(p, "External sources: ", bold=True, color=TEAL, size=7.0)
+    add_hyperlink(p, "Shine pricing", "https://www.shine.fr/tarifs/", size=7.0)
+    add_run(p, " • ", size=7.0, color=MID_GREY)
+    add_hyperlink(p, "Overdraft policy", "https://help.shine.fr/fr/articles/1179200-compte-a-decouvert", size=7.0)
+    add_run(p, " • ", size=7.0, color=MID_GREY)
+    add_hyperlink(p, "E-invoice reform", "https://www.economie.gouv.fr/tout-savoir-sur-la-facturation-electronique-pour-les-entreprises", size=7.0)
+    add_run(p, " • ", size=7.0, color=MID_GREY)
+    add_run(p, "full research note: SHINE_MARKET_RESEARCH_AND_STRATEGY.md", size=7.0, color=MID_GREY)
 
 
 def build_document() -> Path:
