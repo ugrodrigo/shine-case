@@ -253,6 +253,10 @@ def query_frames():
             FROM company_revenue
             """
         ).fetchdf().iloc[0]
+        health_sql = (
+            PROJECT_ROOT / "sql" / "raw_two_table_health_analysis.sql"
+        ).read_text(encoding="utf-8")
+        health_by_segment = connection.execute(health_sql).fetchdf()
         return (
             april_persona,
             cumulative_persona,
@@ -264,6 +268,7 @@ def query_frames():
             confirmed_summary,
             monthly_revenue,
             decline,
+            health_by_segment,
         )
     finally:
         connection.close()
@@ -460,6 +465,226 @@ def make_revenue_per_company_heatmap(
         color="#5E6C76",
     )
     plt.tight_layout(rect=(0, 0.035, 1, 1))
+    fig.savefig(output_path, dpi=200, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+
+def make_two_table_health_chart(health_by_segment, output_path):
+    states = [
+        "Healthy revenue account",
+        "Watch - revenue declining",
+        "Recovered / monitor",
+        "At-risk",
+        "Churned proxy",
+        "Never monetized",
+    ]
+    state_labels = {
+        "Healthy revenue account": "Healthy",
+        "Watch - revenue declining": "Watch",
+        "Recovered / monitor": "Recovered",
+        "At-risk": "At-risk",
+        "Churned proxy": "Churned proxy",
+        "Never monetized": "Never monetized",
+    }
+    state_colors = {
+        "Healthy revenue account": "#16877A",
+        "Watch - revenue declining": "#E9A23B",
+        "Recovered / monitor": "#6AAFC1",
+        "At-risk": "#D97941",
+        "Churned proxy": "#A5453F",
+        "Never monetized": "#D8DEE3",
+    }
+    risk_states = [
+        "Watch - revenue declining",
+        "At-risk",
+        "Churned proxy",
+    ]
+
+    fig = plt.figure(figsize=(12.4, 8.0), facecolor="white")
+    grid = fig.add_gridspec(
+        2,
+        2,
+        height_ratios=[0.8, 2.0],
+        width_ratios=[1.35, 1.0],
+        hspace=0.42,
+        wspace=0.42,
+    )
+    trend_axis = fig.add_subplot(grid[0, :])
+    persona_axis = fig.add_subplot(grid[1, 0])
+    plan_axis = fig.add_subplot(grid[1, 1])
+
+    def draw_stacked(axis, frame, index_order, labels, title, show_risk=False):
+        pivot = frame.pivot_table(
+            index="segment_key",
+            columns="account_health_state",
+            values="company_share_pct",
+            aggfunc="sum",
+            fill_value=0,
+        ).reindex(index_order).fillna(0)
+        counts = frame.groupby("segment_key")["companies"].sum()
+        left = [0.0] * len(index_order)
+        handles = []
+        for state in states:
+            values = (
+                pivot[state].tolist()
+                if state in pivot.columns
+                else [0.0] * len(index_order)
+            )
+            bars = axis.barh(
+                range(len(index_order)),
+                values,
+                left=left,
+                color=state_colors[state],
+                height=0.62,
+                label=state_labels[state],
+            )
+            handles.append(bars[0])
+            if state == "Healthy revenue account":
+                for row_index, (start, value) in enumerate(zip(left, values)):
+                    if value >= 12:
+                        axis.text(
+                            start + value / 2,
+                            row_index,
+                            f"{value:.0f}%",
+                            ha="center",
+                            va="center",
+                            color="white",
+                            fontsize=7.5,
+                            fontweight="bold",
+                        )
+            left = [start + value for start, value in zip(left, values)]
+
+        axis.set_yticks(range(len(index_order)), labels)
+        axis.set_xlim(0, 112 if show_risk else 105)
+        axis.set_xticks([0, 25, 50, 75, 100])
+        axis.set_xlabel("Share of comparable companies", fontsize=8, color="#5E6C76")
+        axis.set_title(title, loc="left", fontsize=11, fontweight="bold", color="#102A43")
+        axis.grid(axis="x", color="#E4E9ED", linewidth=0.7)
+        axis.set_axisbelow(True)
+        axis.spines[["top", "right", "left"]].set_visible(False)
+        axis.tick_params(axis="y", length=0, labelsize=7.6)
+        axis.tick_params(axis="x", labelsize=7.4, colors="#5E6C76")
+
+        if show_risk:
+            for row_index, key in enumerate(index_order):
+                risk = sum(
+                    float(pivot.loc[key, state])
+                    if state in pivot.columns
+                    else 0.0
+                    for state in risk_states
+                )
+                axis.text(
+                    101.0,
+                    row_index,
+                    f"risk {risk:.0f}%",
+                    va="center",
+                    fontsize=7.0,
+                    fontweight="bold",
+                    color="#A5453F",
+                )
+        return handles
+
+    trend = health_by_segment.loc[
+        health_by_segment["segment_level"] == "fixed_cohort_trend"
+    ].copy()
+    trend["segment_key"] = trend["observation_month"].dt.strftime("%b %y")
+    trend_order = (
+        trend[["observation_month", "segment_key"]]
+        .drop_duplicates()
+        .sort_values("observation_month")["segment_key"]
+        .tolist()
+    )
+    trend_counts = trend.groupby("segment_key")["companies"].sum()
+    trend_labels = [f"{key}  (n={int(trend_counts[key]):,})" for key in trend_order]
+    handles = draw_stacked(
+        trend_axis,
+        trend,
+        trend_order,
+        trend_labels,
+        "Fixed October activation cohort: comparable health trend",
+    )
+
+    april = health_by_segment.loc[
+        health_by_segment["observation_month"] == health_by_segment["observation_month"].max()
+    ].copy()
+    persona = april.loc[april["segment_level"] == "persona"].copy()
+    persona["segment_key"] = persona["segment"]
+    persona_counts = persona.groupby("segment_key")["companies"].sum()
+    largest_personas = persona_counts.nlargest(8).index.tolist()
+    persona = persona.loc[persona["segment_key"].isin(largest_personas)]
+    persona_risk = (
+        persona.loc[persona["account_health_state"].isin(risk_states)]
+        .groupby("segment_key")["company_share_pct"]
+        .sum()
+    )
+    persona_order = sorted(
+        largest_personas,
+        key=lambda value: float(persona_risk.get(value, 0)),
+    )
+    persona_labels = [
+        f"{clean_label(value)}  (n={int(persona_counts[value]):,})"
+        for value in persona_order
+    ]
+    draw_stacked(
+        persona_axis,
+        persona,
+        persona_order,
+        persona_labels,
+        "April: eight largest personas",
+        show_risk=True,
+    )
+
+    plan = april.loc[april["segment_level"] == "initial_plan"].copy()
+    plan["segment_key"] = plan["segment"]
+    plan_counts = plan.groupby("segment_key")["companies"].sum()
+    plan_risk = (
+        plan.loc[plan["account_health_state"].isin(risk_states)]
+        .groupby("segment_key")["company_share_pct"]
+        .sum()
+    )
+    plan_order = sorted(
+        plan_counts.index.tolist(),
+        key=lambda value: float(plan_risk.get(value, 0)),
+    )
+    plan_labels = [
+        f"{clean_label(value)}  (n={int(plan_counts[value]):,})"
+        for value in plan_order
+    ]
+    draw_stacked(
+        plan_axis,
+        plan,
+        plan_order,
+        plan_labels,
+        "April: initial plan",
+        show_risk=True,
+    )
+
+    fig.suptitle(
+        "Revenue-based account health — full confirmed period",
+        x=0.01,
+        y=0.995,
+        ha="left",
+        fontsize=14,
+        fontweight="bold",
+        color="#102A43",
+    )
+    fig.legend(
+        handles,
+        [state_labels[state] for state in states],
+        ncol=6,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.965),
+        frameon=False,
+        fontsize=7.7,
+    )
+    fig.text(
+        0.01,
+        0.008,
+        "Risk label = Watch + At-risk + Churned proxy. February-April trend uses one fixed cohort; April segment views use all 6,337 comparable mature companies. May excluded.",
+        fontsize=7.6,
+        color="#5E6C76",
+    )
+    plt.tight_layout(rect=(0, 0.045, 1, 0.92))
     fig.savefig(output_path, dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
@@ -937,6 +1162,89 @@ def build_page_five(document, heatmap_chart):
     add_run(p, "Query 10 in sql/simple_raw_memo_queries.sql", color=BLACK, size=7.8)
 
 
+def build_page_six(document, health_chart, health_by_segment):
+    latest_month = health_by_segment["observation_month"].max()
+    overall = health_by_segment.loc[
+        (health_by_segment["observation_month"] == latest_month)
+        & (health_by_segment["segment_level"] == "overall")
+    ].copy()
+    shares = dict(
+        zip(overall["account_health_state"], overall["company_share_pct"])
+    )
+    comparable_companies = int(overall["companies"].sum())
+    inactive_share = shares.get("At-risk", 0) + shares.get("Churned proxy", 0)
+
+    add_page_title(
+        document,
+        "Page 6 • Revenue-based account health",
+        "Health is broadly stable, but Business and several personas show fragility",
+        "Advanced method • Inputs limited to companies + revenue_with_total • May excluded",
+    )
+    add_kpi_strip(
+        document,
+        [
+            (f"{shares.get('Healthy revenue account', 0):.1f}%", "Healthy in April"),
+            (f"{shares.get('Watch - revenue declining', 0):.1f}%", "Watch in April"),
+            (f"{inactive_share:.1f}%", "At-risk + churn proxy"),
+            (f"{comparable_companies:,}", "comparable mature companies"),
+        ],
+    )
+
+    p = document.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(3)
+    p.paragraph_format.space_after = Pt(2)
+    p.add_run().add_picture(str(health_chart), width=Cm(17.5))
+
+    table = document.add_table(rows=1, cols=2)
+    table.autofit = False
+    table.columns[0].width = Cm(9.1)
+    table.columns[1].width = Cm(9.1)
+    left, right = table.rows[0].cells
+    for cell in (left, right):
+        set_cell_margins(cell, top=78, start=100, bottom=78, end=100)
+
+    set_cell_shading(left, LIGHT_BLUE)
+    add_cell_text(left, "Definitions", bold=True, color=TEAL, size=8.4)
+    add_cell_text(
+        left,
+        "Healthy: revenue-active, no earlier observed revenue gap, and no material decline. Watch: still active, but at least 30% and €10 below the prior three-month median.",
+        size=7.25,
+    )
+    add_cell_text(
+        left,
+        "Recovered: active after an observed gap. At-risk: absent for 1–2 months. Churned proxy: absent for 3+ months. Never monetized: no revenue observed to date.",
+        size=7.25,
+        space_after=0,
+    )
+
+    set_cell_shading(right, LIGHT_GREY)
+    add_cell_text(right, "Interpretation limits", bold=True, color=RED, size=8.4)
+    add_cell_text(
+        right,
+        "This is revenue health—not product use, satisfaction, profitability, account status, or confirmed cancellation. A missing row is assumed to mean no observed revenue and must be validated.",
+        size=7.25,
+    )
+    add_cell_text(
+        right,
+        "Only February–April have three complete post-activation baseline months. The trend uses a fixed October cohort; the April cuts use all mature cohorts. Activation-month exposure is partial and initial plan may not be current.",
+        size=7.25,
+        space_after=0,
+    )
+    set_table_borders(table, color=WHITE, size="7")
+
+    p = document.add_paragraph()
+    p.paragraph_format.space_before = Pt(3)
+    p.paragraph_format.space_after = Pt(0)
+    add_run(p, "Self-contained SQL: ", bold=True, color=TEAL, size=7.6)
+    add_run(
+        p,
+        "sql/raw_two_table_health_analysis.sql — reads only companies and revenue_with_total",
+        color=BLACK,
+        size=7.6,
+    )
+
+
 def build_document():
     ASSET_DIR.mkdir(parents=True, exist_ok=True)
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -951,11 +1259,13 @@ def build_document():
         confirmed_summary,
         monthly_revenue,
         decline,
+        health_by_segment,
     ) = query_frames()
     chart = ASSET_DIR / "simple_raw_segment_view.png"
     trend_decline_chart = ASSET_DIR / "simple_raw_trend_and_decline.png"
     heatmap_chart = ASSET_DIR / "simple_raw_revenue_per_company_heatmap.png"
     plan_heatmap_chart = ASSET_DIR / "simple_raw_plan_revenue_per_company_heatmap.png"
+    health_chart = ASSET_DIR / "raw_two_table_health_full_period.png"
     make_segment_chart(cumulative_persona, cumulative_plan, chart)
     make_trend_decline_chart(monthly_revenue, decline, trend_decline_chart)
     make_revenue_per_company_heatmap(
@@ -971,6 +1281,7 @@ def build_document():
         plan_heatmap_chart,
         figure_height=4.7,
     )
+    make_two_table_health_chart(health_by_segment, health_chart)
 
     document = Document()
     configure_document(document)
@@ -999,6 +1310,8 @@ def build_document():
     build_page_four(document, heatmap_chart)
     document.add_page_break()
     build_page_five(document, plan_heatmap_chart)
+    document.add_page_break()
+    build_page_six(document, health_chart, health_by_segment)
     document.save(OUTPUT_FILE)
     return OUTPUT_FILE
 

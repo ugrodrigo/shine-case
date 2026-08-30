@@ -212,3 +212,56 @@ population and a limited share of total revenue.
   higher plan would cause its revenue to increase.
 
 **SQL:** Query 10 in `sql/simple_raw_memo_queries.sql`.
+
+## Page 6 — Full-period revenue-based account health
+
+This page adds one advanced, self-contained analysis whose only source tables
+are `companies` and `revenue_with_total`. It builds the missing company-month
+calendar inside the query, calculates a rolling three-month revenue baseline,
+tracks prior gaps and inactivity, and assigns a revenue-health state at every
+reliable monthly snapshot.
+
+### Definitions
+
+- **Healthy:** revenue-active, no earlier observed revenue gap, and no
+  material decline against the prior three-month median.
+- **Watch:** revenue-active, but at least 30% and EUR 10 below the prior
+  three-month median.
+- **Recovered:** revenue-active after an earlier observed revenue gap.
+- **At-risk:** previously monetized and absent for one or two months.
+- **Churned proxy:** previously monetized and absent for at least three months.
+- **Never monetized:** no revenue observed to date in the extract.
+
+### Comparison design
+
+- The February-April trend uses the fixed 1,196-company October activation
+  cohort. This prevents the trend from changing merely because newer cohorts
+  become eligible later.
+- The April persona and initial-plan views use all 6,337 companies activated by
+  December 2025. Every company therefore has three complete post-activation
+  months available for the momentum baseline.
+- October-January are not classified in the trend because no company has three
+  complete post-activation baseline months within the extract. May remains
+  excluded because it is provisional.
+
+### April snapshot
+
+- Healthy: **74.72%**.
+- Watch: **10.62%**.
+- At-risk plus Churned proxy: **12.91%**.
+- Business is the clearest initial-plan warning: only **46.15% Healthy** and
+  **53.85% combined Watch + At-risk + Churned proxy**, on a small base of 143.
+- BTP is more balanced at **71.07% Healthy**, but its combined risk signal is
+  still approximately **28%** across 1,151 comparable companies.
+
+### Limitations
+
+This remains a revenue-health proxy. It does not measure product use,
+satisfaction, profitability, account status, or confirmed cancellation. The
+query assumes that a missing revenue row means no observed monthly revenue; that
+must be validated before operational use. Historical interpretation is also
+left-censored by the October extract start, and initial plan may not be current.
+The activation month is a calendar month with potentially partial exposure, so
+continuity involving that month should be interpreted cautiously.
+
+**SQL:** `sql/raw_two_table_health_analysis.sql`.
