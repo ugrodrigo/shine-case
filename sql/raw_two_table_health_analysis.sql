@@ -3,9 +3,12 @@
 --   2. revenue_with_total
 --
 -- The confirmed cutoff is April 2026. May is deliberately excluded.
--- A company becomes comparable only after three complete post-activation
--- months are available before the observation month. Because the extract
--- begins in October 2025, February-April are the reliable trend months.
+-- Every confirmed month from October 2025 through April 2026 is returned.
+-- Healthy/decline assessment requires three complete post-activation baseline
+-- months. The relative decline signal is kept even when its absolute amount is
+-- below EUR 10; the floor now separates low exposure from Material Watch.
+-- revenue-active companies without that history are kept in the explicit
+-- 'Active - building history' state instead of being labelled Healthy.
 --
 -- This is a revenue-health proxy, not contractual customer health or confirmed
 -- churn. A missing revenue row is treated as no observed revenue for the month.
@@ -66,7 +69,7 @@ company_month AS (
         ON s.company_profile_id = r.company_profile_id
        AND s.observation_month = r.revenue_month
 ),
-history_metrics AS (
+history_base AS (
     SELECT
         *,
         COUNT(*) OVER (
@@ -86,23 +89,30 @@ history_metrics AS (
             ORDER BY observation_month
             ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
         ) AS last_revenue_month_to_date,
+        MIN(
+            CASE WHEN has_revenue_this_month THEN observation_month END
+        ) OVER (
+            PARTITION BY company_profile_id
+            ORDER BY observation_month
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS first_revenue_month_to_date
+    FROM company_month
+),
+history_metrics AS (
+    SELECT
+        *,
         SUM(
             CASE
-                WHEN NOT has_revenue_this_month THEN 1
+                WHEN NOT has_revenue_this_month
+                 AND first_revenue_month_to_date IS NOT NULL THEN 1
                 ELSE 0
             END
         ) OVER (
             PARTITION BY company_profile_id
             ORDER BY observation_month
             ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
-        ) AS prior_missing_observed_months
-    FROM company_month
-),
-comparable_snapshots AS (
-    SELECT *
-    FROM history_metrics
-    WHERE DATE_DIFF('month', activation_month, observation_month)
-          >= 1 + (SELECT trailing_baseline_months FROM parameters)
+        ) AS prior_post_monetization_gaps
+    FROM history_base
 ),
 classified AS (
     SELECT
@@ -111,12 +121,14 @@ classified AS (
             WHEN last_revenue_month_to_date IS NULL
                 THEN 'Never monetized'
             WHEN has_revenue_this_month
-             AND prior_missing_observed_months > 0
+             AND prior_post_monetization_gaps > 0
                 THEN 'Recovered / monitor'
             WHEN has_revenue_this_month
              AND baseline_months = (
                     SELECT trailing_baseline_months FROM parameters
                  )
+             AND DATE_DIFF('month', activation_month, observation_month)
+                 >= 1 + (SELECT trailing_baseline_months FROM parameters)
              AND trailing_3m_median_revenue > 0
              AND total_revenue <= trailing_3m_median_revenue * (
                     1 - (SELECT relative_decline_threshold FROM parameters)
@@ -124,9 +136,27 @@ classified AS (
              AND trailing_3m_median_revenue - total_revenue >= (
                     SELECT minimum_eur_decline FROM parameters
                  )
-                THEN 'Watch - revenue declining'
+                THEN 'Material Watch'
             WHEN has_revenue_this_month
-                THEN 'Healthy revenue account'
+             AND baseline_months = (
+                    SELECT trailing_baseline_months FROM parameters
+                 )
+             AND DATE_DIFF('month', activation_month, observation_month)
+                 >= 1 + (SELECT trailing_baseline_months FROM parameters)
+             AND trailing_3m_median_revenue > 0
+             AND total_revenue <= trailing_3m_median_revenue * (
+                    1 - (SELECT relative_decline_threshold FROM parameters)
+                 )
+                THEN 'Declining - low exposure'
+            WHEN has_revenue_this_month
+             AND baseline_months = (
+                    SELECT trailing_baseline_months FROM parameters
+                 )
+             AND DATE_DIFF('month', activation_month, observation_month)
+                 >= 1 + (SELECT trailing_baseline_months FROM parameters)
+                THEN 'Healthy / stable'
+            WHEN has_revenue_this_month
+                THEN 'Active - building history'
             WHEN DATE_DIFF(
                     'month',
                     last_revenue_month_to_date,
@@ -137,7 +167,7 @@ classified AS (
                 THEN 'At-risk'
             ELSE 'Churned proxy'
         END AS account_health_state
-    FROM comparable_snapshots
+    FROM history_metrics
 ),
 snapshot_aggregated AS (
     SELECT
@@ -169,6 +199,38 @@ snapshot_aggregated AS (
         )
     )
 ),
+mature_snapshot_aggregated AS (
+    SELECT
+        observation_month,
+        account_health_state,
+        CASE
+            WHEN GROUPING(persona) = 1
+             AND GROUPING(initial_subscription_group) = 1
+                THEN 'mature_overall'
+            WHEN GROUPING(persona) = 0 THEN 'mature_persona'
+            ELSE 'mature_initial_plan'
+        END AS segment_level,
+        CASE
+            WHEN GROUPING(persona) = 1
+             AND GROUPING(initial_subscription_group) = 1
+                THEN 'ALL'
+            WHEN GROUPING(persona) = 0 THEN persona
+            ELSE initial_subscription_group
+        END AS segment,
+        COUNT(*) AS companies
+    FROM classified
+    WHERE DATE_DIFF('month', activation_month, observation_month)
+          >= 1 + (SELECT trailing_baseline_months FROM parameters)
+    GROUP BY GROUPING SETS (
+        (observation_month, account_health_state),
+        (observation_month, account_health_state, persona),
+        (
+            observation_month,
+            account_health_state,
+            initial_subscription_group
+        )
+    )
+),
 fixed_cohort_trend AS (
     SELECT
         observation_month,
@@ -183,6 +245,8 @@ fixed_cohort_trend AS (
 ),
 aggregated AS (
     SELECT * FROM snapshot_aggregated
+    UNION ALL
+    SELECT * FROM mature_snapshot_aggregated
     UNION ALL
     SELECT * FROM fixed_cohort_trend
 )
@@ -201,10 +265,12 @@ ORDER BY
     segment_level,
     segment,
     CASE account_health_state
-        WHEN 'Healthy revenue account' THEN 1
-        WHEN 'Watch - revenue declining' THEN 2
-        WHEN 'Recovered / monitor' THEN 3
-        WHEN 'At-risk' THEN 4
-        WHEN 'Churned proxy' THEN 5
-        ELSE 6
+        WHEN 'Healthy / stable' THEN 1
+        WHEN 'Declining - low exposure' THEN 2
+        WHEN 'Material Watch' THEN 3
+        WHEN 'Active - building history' THEN 4
+        WHEN 'Recovered / monitor' THEN 5
+        WHEN 'At-risk' THEN 6
+        WHEN 'Churned proxy' THEN 7
+        ELSE 8
     END;

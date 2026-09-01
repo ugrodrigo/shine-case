@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQL for Google Docs</title>
+  <style>
+    body {
+      margin: 32px;
+      color: #202124;
+      font-family: Arial, sans-serif;
+    }
+    .instructions {
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    pre {
+      display: inline-block;
+      margin: 0;
+      padding: 16px 18px;
+      border: 1px solid #dadce0;
+      border-radius: 6px;
+      background: #f8f9fa;
+      color: #202124;
+      font: 11pt/1.45 "Roboto Mono", Consolas, "Courier New", monospace;
+      white-space: pre-wrap;
+    }
+    .kw { color: #174ea6; font-weight: 700; }
+    .fn { color: #9334e6; }
+    .str { color: #188038; }
+    .num { color: #c26401; }
+    .alias { color: #007b83; }
+  </style>
+</head>
+<body>
+  <div class="instructions">
+    Select only the SQL box below, copy it, and paste it into Google Docs.
+  </div>
+  <pre><span class="kw">SELECT</span> c.persona,
+       <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> r.company_profile_id) <span class="kw">AS</span> <span class="alias">revenue_companies</span>,
+       <span class="fn">ROUND</span>(<span class="fn">SUM</span>(r.total_revenue), <span class="num">2</span>) <span class="kw">AS</span> <span class="alias">total_revenue</span>,
+       <span class="fn">ROUND</span>(<span class="num">100.0</span> * <span class="fn">SUM</span>(r.total_revenue) / <span class="fn">SUM</span>(<span class="fn">SUM</span>(r.total_revenue)) <span class="kw">OVER</span> (), <span class="num">2</span>) <span class="kw">AS</span> <span class="alias">revenue_share_pct</span>,
+       <span class="fn">ROUND</span>(<span class="fn">SUM</span>(r.total_revenue) / <span class="fn">NULLIF</span>(<span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> r.company_profile_id), <span class="num">0</span>), <span class="num">2</span>) <span class="kw">AS</span> <span class="alias">revenue_per_revenue_company</span>
+<span class="kw">FROM</span> companies c
+<span class="kw">JOIN</span> revenue_with_total r <span class="kw">ON</span> c.company_profile_id = r.company_profile_id
+<span class="kw">WHERE</span> r.revenue_month &lt;= <span class="kw">DATE</span> <span class="str">'2026-04-01'</span>
+<span class="kw">GROUP BY</span> c.persona
+<span class="kw">ORDER BY</span> total_revenue <span class="kw">DESC</span>;</pre>
+</body>
+</html>

@@ -458,15 +458,32 @@ def make_health_chart(path: Path) -> None:
         "Wholesale",
     ]
     states = [
-        "Healthy revenue account",
-        "Watch - revenue declining",
+        "Healthy / stable",
+        "Declining - low exposure",
+        "Material Watch",
         "Recovered / monitor",
         "At-risk",
         "Churned proxy",
         "Never monetized",
     ]
-    state_labels = ["Healthy", "Watch", "Recovered", "At-risk", "Churned proxy", "Never monetized"]
-    colors = ["#2A9D8F", "#E9A23B", "#6AAED6", "#E07A3F", "#C95C3D", "#AAB7C0"]
+    state_labels = [
+        "Healthy / stable",
+        "Declining <€10",
+        "Material Watch",
+        "Recovered",
+        "At-risk",
+        "Churned proxy",
+        "Never monetized",
+    ]
+    colors = [
+        "#2A9D8F",
+        "#F5D58A",
+        "#E9A23B",
+        "#6AAED6",
+        "#E07A3F",
+        "#C95C3D",
+        "#AAB7C0",
+    ]
 
     def prepare(frame, segment_column, names):
         subset = frame[frame[segment_column].isin(names)].copy()
@@ -483,19 +500,40 @@ def make_health_chart(path: Path) -> None:
                 pivot[state] = 0.0
         pivot = pivot[states]
         signal = (
-            pivot["Watch - revenue declining"]
+            pivot["Declining - low exposure"]
+            + pivot["Material Watch"]
             + pivot["At-risk"]
             + pivot["Churned proxy"]
         )
+        signal_counts = (
+            subset[
+                subset["account_health_state"].isin(
+                    [
+                        "Declining - low exposure",
+                        "Material Watch",
+                        "At-risk",
+                        "Churned proxy",
+                    ]
+                )
+            ]
+            .groupby(segment_column)["companies"]
+            .sum()
+            .reindex(pivot.index, fill_value=0)
+        )
         order = signal.sort_values(ascending=False).index
-        return pivot.loc[order], populations.loc[order], signal.loc[order]
+        return (
+            pivot.loc[order],
+            populations.loc[order],
+            signal.loc[order],
+            signal_counts.loc[order],
+        )
 
-    def draw_stack(ax, pivot, populations, signal, title):
+    def draw_stack(ax, pivot, populations, signal, signal_counts, title):
         y = list(range(len(pivot)))
         left = [0.0] * len(pivot)
         for state, label, color in zip(states, state_labels, colors):
             values = pivot[state].astype(float).tolist()
-            bars = ax.barh(y, values, left=left, color=color, height=0.68, label=label)
+            bars = ax.barh(y, values, left=left, color=color, height=0.72, label=label)
             for bar, value, start in zip(bars, values, left):
                 if value >= 7.0:
                     ax.text(
@@ -504,33 +542,38 @@ def make_health_chart(path: Path) -> None:
                         f"{value:.0f}%",
                         ha="center",
                         va="center",
-                        fontsize=5.8,
+                        fontsize=7.0,
                         fontweight="bold",
-                        color="white" if state != "Watch - revenue declining" else "#543A00",
+                        color=(
+                            "#543A00"
+                            if state in ("Declining - low exposure", "Material Watch")
+                            else "white"
+                        ),
                     )
             left = [a + b for a, b in zip(left, values)]
         labels = []
         for value in pivot.index:
             label = str(value).replace("_", " ").title()
             label = label.replace("Btp", "BTP").replace(" It", " IT")
-            labels.append(label)
-        ax.set_yticks(y, labels, fontsize=6.5, color="#17212B")
+            labels.append(f"{label}  (N={int(populations[value]):,})")
+        ax.set_yticks(y, labels, fontsize=7.4, color="#17212B")
         ax.invert_yaxis()
-        ax.set_xlim(0, 119)
+        ax.set_xlim(0, 121)
         ax.set_xticks([0, 25, 50, 75, 100], ["0%", "25%", "50%", "75%", "100%"])
-        ax.tick_params(axis="x", labelsize=5.8, colors="#6B7780", length=0)
+        ax.tick_params(axis="x", labelsize=6.8, colors="#6B7780", length=0)
         ax.tick_params(axis="y", length=0, pad=4)
         ax.grid(axis="x", color="#E8EDF0", linewidth=0.5)
         ax.set_axisbelow(True)
-        ax.set_title(title, loc="left", fontsize=8.2, fontweight="bold", color="#102A43", pad=2)
+        ax.set_title(title, loc="left", fontsize=9.5, fontweight="bold", color="#102A43", pad=3)
         for yi, name in enumerate(pivot.index):
+            annotation = f"Declining + inactive {signal[name]:.1f}%"
             ax.text(
                 101.2,
                 yi,
-                f"Watch+inactive {signal[name]:.1f}%  |  N={int(populations[name]):,}",
+                annotation,
                 va="center",
                 ha="left",
-                fontsize=5.7,
+                fontsize=6.8,
                 color="#425466",
             )
         for spine in ax.spines.values():
@@ -538,44 +581,62 @@ def make_health_chart(path: Path) -> None:
 
     persona_frame = health[health["segment_level"].eq("persona")]
     plan_frame = health[health["segment_level"].eq("initial_plan")]
-    persona_pivot, persona_n, persona_signal = prepare(persona_frame, "persona", persona_names)
-    plan_pivot, plan_n, plan_signal = prepare(
+    overall_frame = health[health["segment_level"].eq("overall")].copy()
+    overall_frame["overall_label"] = "All mature companies"
+    overall_pivot, overall_n, overall_signal, overall_signal_n = prepare(
+        overall_frame,
+        "overall_label",
+        ["All mature companies"],
+    )
+    persona_pivot, persona_n, persona_signal, persona_signal_n = prepare(persona_frame, "persona", persona_names)
+    plan_pivot, plan_n, plan_signal, plan_signal_n = prepare(
         plan_frame,
         "initial_subscription_group",
         ["start", "plus", "free", "business"],
     )
 
     fig, axes = plt.subplots(
-        2,
+        3,
         1,
-        figsize=(7.3, 3.0),
+        figsize=(7.6, 4.6),
         dpi=190,
-        gridspec_kw={"height_ratios": [1.9, 1.0]},
+        gridspec_kw={"height_ratios": [0.45, 2.0, 1.1]},
     )
     fig.patch.set_facecolor("white")
-    draw_stack(axes[0], persona_pivot, persona_n, persona_signal, "Personas")
-    draw_stack(axes[1], plan_pivot, plan_n, plan_signal, "Initial plans")
+    draw_stack(axes[0], overall_pivot, overall_n, overall_signal, overall_signal_n, "Overall")
+    draw_stack(axes[1], persona_pivot, persona_n, persona_signal, persona_signal_n, "Personas")
+    draw_stack(axes[2], plan_pivot, plan_n, plan_signal, plan_signal_n, "Initial plans")
     fig.suptitle(
         "Mature-company health exposes different weak and strong candidates",
         x=0.01,
         y=0.985,
         ha="left",
-        fontsize=9.4,
+        fontsize=10.5,
         fontweight="bold",
         color="#102A43",
+    )
+    overall_name = overall_signal.index[0]
+    fig.text(
+        0.01,
+        0.943,
+        f"Overall Declining + inactive: {overall_signal[overall_name]:.1f}% "
+        f"(N={int(overall_signal_n[overall_name]):,})",
+        ha="left",
+        fontsize=7.4,
+        color="#425466",
     )
     legend = [Patch(facecolor=color, label=label) for label, color in zip(state_labels, colors)]
     fig.legend(
         handles=legend,
-        ncol=6,
+        ncol=4,
         frameon=False,
         loc="lower center",
         bbox_to_anchor=(0.5, 0.002),
-        fontsize=6.2,
+        fontsize=7.2,
         handlelength=1.0,
         columnspacing=0.9,
     )
-    plt.tight_layout(rect=[0, 0.10, 1, 0.92], pad=0.4, h_pad=0.5)
+    plt.tight_layout(rect=[0, 0.13, 1, 0.90], pad=0.5, h_pad=0.7)
     fig.savefig(path, facecolor="white")
     plt.close(fig)
 
@@ -615,22 +676,22 @@ def build_page_one(document: Document, ranking_chart: Path) -> None:
     add_page_title(
         document,
         "Page 1 • Position and magnitude",
-        "BTP is the strongest demonstrated vertical—not unlimited market headroom",
+        "Revenue deterioration is the clearest near-term risk",
         "Confirmed analysis through April 2026 • May excluded because signup coverage is truncated",
     )
     add_callout(
         document,
-        "Across all 9,088 comparable companies, BTP contributes 26.74% of revenue and Plus "
-        "generates 2.02× average revenue/company. External evidence supports BTP product fit, "
-        "but sector and product constraints require a bounded causal test before scaling.",
+        "Among 6,337 mature companies, 1,909 (30.1%) are in Declining + inactive. The immediate "
+        "test group is narrower: 953 (15.0%) are either Material Watch or At-risk, where Shine "
+        "can intervene before a longer period without revenue.",
     )
     add_kpi_strip(
         document,
         [
-            ("9,088", "companies in comparable base"),
-            ("44.6%", "all comparable revenue from Start"),
-            ("26.7%", "all comparable revenue from BTP"),
-            ("70.2%", "generated by top 20% — secondary"),
+            ("6,337", "mature companies assessed"),
+            ("30.1%", "Declining + inactive"),
+            ("10.6%", "Material Watch • N=673"),
+            ("4.4%", "At-risk • N=280"),
         ],
     )
     p = document.add_paragraph()
@@ -668,12 +729,12 @@ def build_page_one(document: Document, ranking_chart: Path) -> None:
         cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
     set_cell_shading(opportunity, LIGHT_BLUE)
     set_cell_shading(risk, LIGHT_GREY)
-    add_small_label(opportunity, "Opportunity", TEAL)
-    add_cell_text(opportunity, "BTP leads demonstrated persona scale and efficiency: 26.74% of revenue and 1.48× average revenue/company.", bold=True)
-    add_cell_text(opportunity, "France has a large artisan BTP base; Shine already offers a dedicated BTP workflow.", size=8.2)
+    add_small_label(opportunity, "Lead opportunity", TEAL)
+    add_cell_text(opportunity, "Intervene while an account is still revenue-active but materially declining, or immediately after its first revenue-free month.", bold=True)
+    add_cell_text(opportunity, "Prioritise the largest exposures first; use low-cost automation for the long tail.", size=8.2)
     add_small_label(risk, "Risk", RED)
-    add_cell_text(risk, "BTP activity contracted in 2025; Shine cannot directly offer overdrafts and advanced BTP invoicing is only partly supported.", bold=True)
-    add_cell_text(risk, "Business reaches 3.22× average revenue/company but contributes only 6.95% (N=196); it is not the lead bet.", size=8.2)
+    add_cell_text(risk, "Declining + inactive is a screening group—not one account state and not confirmed churn.", bold=True)
+    add_cell_text(risk, "It also contains Declining <€10 and Churned proxy, which should receive lower-cost or lower-priority treatment.", size=8.2)
     set_table_borders(table, color=WHITE, size="8")
 
     add_heading(document, "How to read the ranking", level=2, space_before=3)
@@ -702,8 +763,8 @@ def build_page_one(document: Document, ranking_chart: Path) -> None:
     add_run(p, "Decision: ", bold=True, color=TEAL, size=9.0)
     add_run(
         p,
-        "prioritize a controlled BTP-fit activation test, with Plus as the strongest initial-plan signal. "
-        "Scale only on incremental contribution; treat 70/20 as secondary concentration context.",
+        "lead with a controlled experiment for Material Watch and At-risk companies. Prioritise by "
+        "gross exposure and expected recovery—not persona alone—and keep BTP discovery second.",
         size=9.0,
     )
 
@@ -743,19 +804,19 @@ def build_page_two(document: Document, health_chart: Path) -> None:
     add_initiative_card(
         document,
         1,
-        "BTP-fit activation & monetization experiment",
-        "Test a vertical workflow with suitable tradespeople and small crews; do not assume broad BTP acquisition or plan upsell is the lever.",
-        "BTP contributes 26.74% of all comparable revenue (N=1,642; €178.85/company; 1.48× overall). In the mature BTP base, 71.07% are Healthy and 15.55% Watch.",
-        "Existing BTP targeting, sector contraction, financing needs, and product limits cap extrapolation. No CAC, margin, current-plan, or product-use data.",
+        "Revenue-deterioration & first-gap protection",
+        "Diagnose material declines while revenue is still active and support accounts after their first missing month; use state-specific treatments.",
+        "Material Watch is 10.6% (N=673) and At-risk is 4.4% (N=280): together 15.0% of mature companies (N=953). Their gross exposure proxy is €51.1k; illustrative 10–20% recovery is €5.1k–€10.2k/month before cost—not a forecast.",
+        "Exposure is not recoverable revenue. Product usage, cause, recovery probability, contribution margin, and treatment cost are missing.",
         TEAL,
     )
     add_initiative_card(
         document,
         2,
-        "Revenue-decline & first-gap protection",
-        "Trigger diagnosis at a material revenue decline and support after the first missing month; monitor recoveries.",
-        "493 high-value accounts are Watch, with a €41.0k observed baseline-to-April gap. In the mature base, Business is only 46.15% Healthy and 43.36% inactive—but N=143.",
-        "The decline threshold is an analytical assumption, not causal loss. Product usage is missing, so diagnose the driver before outreach.",
+        "BTP product-fit discovery experiment",
+        "Validate which BTP needs and product behaviours drive value before scaling acquisition, workflow activation, or upsell.",
+        "BTP contributes 26.74% of comparable revenue (N=1,642; €178.85/company; 1.48× overall), combining attractive scale and efficiency.",
+        "No product-use, current-plan, CAC, margin, or acquisition-channel data identifies a causal lever; sector and product constraints cap extrapolation.",
         AMBER,
     )
 
@@ -776,14 +837,83 @@ def build_page_two(document: Document, health_chart: Path) -> None:
     p = document.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.space_after = Pt(1)
-    p.add_run().add_picture(str(health_chart), width=Cm(15.5))
+    p.add_run().add_picture(str(health_chart), width=Cm(16.5))
+
+    p = document.add_paragraph()
+    p.paragraph_format.space_before = Pt(1)
+    p.paragraph_format.space_after = Pt(1)
+    add_run(p, "Legend definitions", bold=True, color=NAVY, size=7.6)
+
+    legend_definitions = [
+        (
+            "Healthy / stable",
+            "revenue-active in April, uninterrupted since activation, and without a decline of 30% or more.",
+            GREEN,
+        ),
+        (
+            "Declining <€10",
+            "revenue-active and at least 30% below its prior three-month median, but by less than €10.",
+            "C58A1D",
+        ),
+        (
+            "Material Watch",
+            "revenue-active and at least 30% below its prior three-month median, with a decline of at least €10.",
+            AMBER,
+        ),
+        (
+            "Recovered",
+            "revenue-active again after an observed no-revenue month since activation.",
+            "6AAED6",
+        ),
+        (
+            "At-risk",
+            "previously monetized, with no observed revenue for one or two months.",
+            "E07A3F",
+        ),
+        (
+            "Churned proxy",
+            "previously monetized, with no observed revenue for at least three months.",
+            RED,
+        ),
+        (
+            "Never monetized",
+            "no revenue has been observed for the company in the available extract.",
+            "7A8B96",
+        ),
+    ]
+    definitions = document.add_table(rows=4, cols=2)
+    definitions.autofit = False
+    definitions.columns[0].width = Cm(9.15)
+    definitions.columns[1].width = Cm(9.15)
+    for idx, (label, definition, color) in enumerate(legend_definitions):
+        cell = definitions.cell(idx // 2, idx % 2)
+        set_cell_margins(cell, top=35, start=75, bottom=35, end=75)
+        set_cell_shading(cell, WHITE if idx // 2 % 2 == 0 else LIGHT_GREY)
+        paragraph = cell.paragraphs[0]
+        paragraph.paragraph_format.space_after = Pt(0)
+        add_run(paragraph, f"{label}: ", bold=True, color=color, size=6.9)
+        add_run(paragraph, definition, color=MID_GREY, size=6.9)
+    for row in definitions.rows:
+        prevent_row_split(row)
+    set_table_borders(definitions, color="DDE3E8", size="3")
+
+    p = document.add_paragraph()
+    p.paragraph_format.space_before = Pt(1)
+    p.paragraph_format.space_after = Pt(1)
+    add_run(p, "How to read the risk signal: ", bold=True, color=TEAL, size=7.4)
+    add_run(
+        p,
+        "The Overall bar shows 1,909 of 6,337 mature companies (30.1%) in the grouped Declining + inactive signal. This is not a separate account state: it combines Declining <€10 + Material Watch + At-risk + Churned proxy. The first two remain revenue-active; At-risk means 1–2 revenue-free months and Churned proxy means 3+ after prior revenue. It excludes Healthy/stable, Recovered, and Never monetized. This is a screening indicator—not confirmed churn. N is the mature-company population.",
+        size=7.4,
+        color=MID_GREY,
+    )
 
     add_heading(document, "Alternatives considered—and rejected", level=2, space_before=1)
     rows = [
         ("Acquire more Business", "High revenue/company", "Small base; 73.3% funnel dropout; weak continuity; no CAC or KYB-reason data."),
         ("Broad funnel overhaul", "62.9% 30-day dropout", "Cannot distinguish rejection, delay, abandonment, or extraction effects; no channel cost."),
-        ("Blanket churn campaign", "Retention feels urgent", "A decline is not churn; target the 493 Watch and 154 inactive accounts with distinct treatments."),
-        ("Immediate plan upsell", "Plus/Business correlate with value", "Only initial plan exists; current plan and causal plan effect are unknown."),
+        ("Scale BTP immediately", "Strong scale and efficiency", "The data identifies the segment, but not the product or acquisition lever that caused its value."),
+        ("Blanket churn campaign", "Retention feels urgent", "Decline and inactivity are different states; treatment should vary by state, exposure, and expected recovery."),
     ]
     table = document.add_table(rows=1, cols=3)
     table.autofit = False
@@ -812,7 +942,7 @@ def build_page_two(document: Document, health_chart: Path) -> None:
     add_run(p, "Magnitude limit: ", bold=True, color=RED, size=7.7)
     add_run(
         p,
-        "populations and observed revenue can be sized; uplift, margin, CAC and causal impact cannot.",
+        "gross exposure can be sized; recoverability, uplift, contribution margin, treatment cost and causal impact cannot.",
         size=7.7,
         color=MID_GREY,
     )
@@ -826,16 +956,16 @@ def build_page_three(document: Document) -> None:
         "Association identifies where to test; randomisation establishes whether the lever works",
     )
 
-    add_heading(document, "Lead experiment: BTP-fit workflow activation", level=2, space_before=0)
+    add_heading(document, "Lead experiment: revenue-deterioration protection", level=2, space_before=0)
     table = document.add_table(rows=5, cols=2)
     table.autofit = False
     table.columns[0].width = Cm(4.0)
     table.columns[1].width = Cm(14.3)
     experiment = [
-        ("Hypothesis", "A BTP-specific workflow around e-invoicing, collection, expense control, cash-flow signals, or relevant partner services causes incremental recognised revenue without worsening guardrails."),
-        ("Eligibility & design", "Use product need—not persona alone—to identify suitable tradespeople and small crews; freeze eligibility in a pre-period; randomise treatment vs business-as-usual; stratify by pre-revenue, cohort age, current plan and usage; analyse intention-to-treat."),
-        ("Primary metric", "Incremental mean total revenue per eligible company over 90 days. Report bootstrap confidence intervals plus median and winsorised sensitivities because revenue is highly skewed."),
-        ("Success", "Scale within BTP only if the pre-registered interval supports uplift above fully loaded treatment cost with no guardrail deterioration. Test transferability separately before expanding to other personas."),
+        ("Hypothesis", "A state-specific intervention after a material decline or first revenue-free month causes incremental recognised revenue versus business-as-usual."),
+        ("Eligibility & design", "Freeze monthly eligibility; stratify by state, exposure/value, cohort and segment; randomise within strata. Prioritise Material Watch and first-gap At-risk: high-touch for the largest exposures, low-cost automation for the tail, and lower-touch monitoring for Churned proxy."),
+        ("Primary metric", "Incremental mean total revenue per eligible company over 60–90 days. Report confidence intervals plus median and winsorised sensitivities because revenue is highly skewed."),
+        ("Success", "Scale a treatment tier only if incremental contribution exceeds fully loaded intervention cost without guardrail deterioration. Estimate effects separately by state and value tier."),
         ("Guardrails", "Closures, complaints, support contacts, fraud/AML/risk outcomes, fairness, operational failures, and negative-fee adjustments."),
     ]
     for idx, (label, value) in enumerate(experiment):
@@ -857,7 +987,7 @@ def build_page_three(document: Document) -> None:
         validation.columns[idx].width = Cm(6.1)
     validations = [
         ("1", "Completeness", "Confirm missing row = zero; reconcile to Finance; keep May out until signup coverage is explained."),
-        ("2", "Selection & meaning", "Validate BTP definition, acquisition channel/spend, CAC, approval, current plan, persona history and product use."),
+        ("2", "Cause & actionability", "Add product/card usage, balances, current plan, status/closure, contact eligibility and cost; diagnose why revenue declined."),
         ("3", "KYB & privacy", "Confirm permitted persona use; minimise data; suppress small cells; never use this for adverse eligibility decisions."),
     ]
     for idx, (number, title, detail) in enumerate(validations):
@@ -927,7 +1057,7 @@ def build_page_three(document: Document) -> None:
     p = document.add_paragraph()
     p.paragraph_format.space_after = Pt(0)
     add_run(p, "Not concluded: ", bold=True, color=RED, size=7.7)
-    add_run(p, "true churn, forecast LTV, causal plan effect, CAC/payback, profitability, or complete May performance.", size=7.7, color=MID_GREY)
+    add_run(p, "recoverable exposure, true churn, forecast LTV, causal plan effect, CAC/payback, profitability, or complete May performance.", size=7.7, color=MID_GREY)
     p = document.add_paragraph()
     p.paragraph_format.space_after = Pt(0)
     add_run(p, "External sources: ", bold=True, color=TEAL, size=7.0)

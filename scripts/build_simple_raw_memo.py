@@ -12,6 +12,7 @@ from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm, Pt
 
+from build_funnel_90d_heatmap import build_chart as build_funnel_heatmap
 from build_final_doc import (
     AMBER,
     BLACK,
@@ -285,11 +286,10 @@ def make_segment_chart(cumulative_persona, cumulative_plan, output_path):
     fig, axes = plt.subplots(1, 2, figsize=(12.4, 4.7), gridspec_kw={"width_ratios": [1.45, 1]})
     fig.patch.set_facecolor("white")
 
-    persona_colors = ["#008C8C" if value == "BTP" else "#A9C7C7" for value in persona["persona"]]
     bars = axes[0].barh(
         [clean_label(value) for value in persona["persona"]],
         persona["revenue_share_pct"],
-        color=persona_colors,
+        color="#A9C7C7",
         height=0.62,
     )
     for bar, share, average in zip(
@@ -310,11 +310,10 @@ def make_segment_chart(cumulative_persona, cumulative_plan, output_path):
     axes[0].set_xlabel("Share of cumulative revenue through April", fontsize=9, color="#5E6C76")
     axes[0].set_xlim(0, max(persona["revenue_share_pct"]) * 1.70)
 
-    plan_colors = ["#008C8C" if value == "plus" else "#A9C7C7" for value in plan["initial_plan"]]
     bars = axes[1].barh(
         [clean_label(value) for value in plan["initial_plan"]],
         plan["revenue_share_pct"],
-        color=plan_colors,
+        color="#A9C7C7",
         height=0.58,
     )
     for bar, share, average in zip(
@@ -342,14 +341,7 @@ def make_segment_chart(cumulative_persona, cumulative_plan, output_path):
         axis.tick_params(axis="y", length=0, labelsize=8.5)
         axis.tick_params(axis="x", labelsize=8, colors="#5E6C76")
 
-    fig.text(
-        0.01,
-        0.005,
-        "Bar length = share of confirmed cumulative revenue through April. Persona and plan labels also show cumulative revenue per revenue-producing company. BTP and Plus highlighted.",
-        fontsize=8,
-        color="#5E6C76",
-    )
-    plt.tight_layout(rect=(0, 0.05, 1, 1))
+    plt.tight_layout(rect=(0, 0.02, 1, 1))
     fig.savefig(output_path, dpi=190, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
@@ -471,40 +463,47 @@ def make_revenue_per_company_heatmap(
 
 def make_two_table_health_chart(health_by_segment, output_path):
     states = [
-        "Healthy revenue account",
-        "Watch - revenue declining",
+        "Healthy / stable",
+        "Declining - low exposure",
+        "Material Watch",
+        "Active - building history",
         "Recovered / monitor",
         "At-risk",
         "Churned proxy",
         "Never monetized",
     ]
     state_labels = {
-        "Healthy revenue account": "Healthy",
-        "Watch - revenue declining": "Watch",
+        "Healthy / stable": "Healthy / stable",
+        "Declining - low exposure": "Declining <€10",
+        "Material Watch": "Material Watch",
+        "Active - building history": "Building history",
         "Recovered / monitor": "Recovered",
         "At-risk": "At-risk",
         "Churned proxy": "Churned proxy",
         "Never monetized": "Never monetized",
     }
     state_colors = {
-        "Healthy revenue account": "#16877A",
-        "Watch - revenue declining": "#E9A23B",
+        "Healthy / stable": "#16877A",
+        "Declining - low exposure": "#F5D58A",
+        "Material Watch": "#E9A23B",
+        "Active - building history": "#8CB8A8",
         "Recovered / monitor": "#6AAFC1",
         "At-risk": "#D97941",
         "Churned proxy": "#A5453F",
         "Never monetized": "#D8DEE3",
     }
     risk_states = [
-        "Watch - revenue declining",
+        "Declining - low exposure",
+        "Material Watch",
         "At-risk",
         "Churned proxy",
     ]
 
-    fig = plt.figure(figsize=(12.4, 8.0), facecolor="white")
+    fig = plt.figure(figsize=(12.4, 8.6), facecolor="white")
     grid = fig.add_gridspec(
         2,
         2,
-        height_ratios=[0.8, 2.0],
+        height_ratios=[1.25, 2.0],
         width_ratios=[1.35, 1.0],
         hspace=0.42,
         wspace=0.42,
@@ -539,7 +538,7 @@ def make_two_table_health_chart(health_by_segment, output_path):
                 label=state_labels[state],
             )
             handles.append(bars[0])
-            if state == "Healthy revenue account":
+            if state == "Healthy / stable":
                 for row_index, (start, value) in enumerate(zip(left, values)):
                     if value >= 12:
                         axis.text(
@@ -557,7 +556,7 @@ def make_two_table_health_chart(health_by_segment, output_path):
         axis.set_yticks(range(len(index_order)), labels)
         axis.set_xlim(0, 112 if show_risk else 105)
         axis.set_xticks([0, 25, 50, 75, 100])
-        axis.set_xlabel("Share of comparable companies", fontsize=8, color="#5E6C76")
+        axis.set_xlabel("Share of companies in view", fontsize=8, color="#5E6C76")
         axis.set_title(title, loc="left", fontsize=11, fontweight="bold", color="#102A43")
         axis.grid(axis="x", color="#E4E9ED", linewidth=0.7)
         axis.set_axisbelow(True)
@@ -601,13 +600,13 @@ def make_two_table_health_chart(health_by_segment, output_path):
         trend,
         trend_order,
         trend_labels,
-        "Fixed October activation cohort: comparable health trend",
+        "Fixed October activation cohort: all confirmed months",
     )
 
     april = health_by_segment.loc[
         health_by_segment["observation_month"] == health_by_segment["observation_month"].max()
     ].copy()
-    persona = april.loc[april["segment_level"] == "persona"].copy()
+    persona = april.loc[april["segment_level"] == "mature_persona"].copy()
     persona["segment_key"] = persona["segment"]
     persona_counts = persona.groupby("segment_key")["companies"].sum()
     largest_personas = persona_counts.nlargest(8).index.tolist()
@@ -630,11 +629,11 @@ def make_two_table_health_chart(health_by_segment, output_path):
         persona,
         persona_order,
         persona_labels,
-        "April: eight largest personas",
+        "April mature accounts: eight largest personas",
         show_risk=True,
     )
 
-    plan = april.loc[april["segment_level"] == "initial_plan"].copy()
+    plan = april.loc[april["segment_level"] == "mature_initial_plan"].copy()
     plan["segment_key"] = plan["segment"]
     plan_counts = plan.groupby("segment_key")["companies"].sum()
     plan_risk = (
@@ -655,7 +654,7 @@ def make_two_table_health_chart(health_by_segment, output_path):
         plan,
         plan_order,
         plan_labels,
-        "April: initial plan",
+        "April mature accounts: initial plan",
         show_risk=True,
     )
 
@@ -671,7 +670,7 @@ def make_two_table_health_chart(health_by_segment, output_path):
     fig.legend(
         handles,
         [state_labels[state] for state in states],
-        ncol=6,
+        ncol=4,
         loc="upper center",
         bbox_to_anchor=(0.5, 0.965),
         frameon=False,
@@ -680,7 +679,7 @@ def make_two_table_health_chart(health_by_segment, output_path):
     fig.text(
         0.01,
         0.008,
-        "Risk label = Watch + At-risk + Churned proxy. February-April trend uses one fixed cohort; April segment views use all 6,337 comparable mature companies. May excluded.",
+        f"Risk = both declining states + At-risk + Churned proxy. October-April trend fixes the activation cohort; April cuts use {int(persona_counts.sum()):,} mature accounts. Building history is not called Healthy or risky. May excluded.",
         fontsize=7.6,
         color="#5E6C76",
     )
@@ -847,6 +846,18 @@ def build_page_one(
     p.paragraph_format.space_after = Pt(1)
     p.add_run().add_picture(str(chart), width=Cm(18.0))
 
+    p = document.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(2)
+    add_run(p, "How to read: ", bold=True, color=TEAL, size=7.7)
+    add_run(
+        p,
+        "bar length is cumulative revenue share through April; labels add cumulative revenue per revenue company.",
+        color=MID_GREY,
+        size=7.7,
+    )
+
     add_heading(document, "What I conclude", level=2, space_before=2)
     table = document.add_table(rows=1, cols=3)
     table.autofit = False
@@ -913,10 +924,10 @@ def build_page_two(document, trend_decline_chart, april_persona, cumulative_pers
     add_initiative(
         document,
         1,
-        "BTP-fit activation test",
-        f"BTP is {btp_april['revenue_share_pct']:.2f}% of April revenue and {btp_cumulative['revenue_share_pct']:.2f}% of cumulative confirmed revenue.",
-        "Test one relevant workflow—such as invoicing, collection, expense control, or cash-flow alerts—against business-as-usual.",
-        "Raw revenue cannot show product use, CAC, margin, current plan, or whether existing BTP marketing created the result.",
+        "Post-KYB activation test",
+        "In the fair 90-day signup funnel, 66.5% validate, 76.1% of validated companies activate, and 50.6% activate overall (N=22,033).",
+        "Randomise validated, unclosed, unactivated companies to improved onboarding versus business-as-usual; measure 90-day revenue per validated company.",
+        "Closure reasons, treatment cost, margin, product usage, and the achievable causal uplift are missing. Do not relax KYB controls.",
         TEAL,
     )
     add_initiative(
@@ -1022,9 +1033,9 @@ def build_page_three(document):
     set_table_borders(table, color=WHITE, size="7")
 
     add_heading(document, "Lead experiment and validation", level=2, space_before=3)
-    add_bullet(document, "Randomise eligible BTP companies to one defined workflow versus business-as-usual; do not target on persona alone.", size=8.0)
-    add_bullet(document, "Measure incremental recognized revenue over 90 days, feature adoption, and account-health guardrails.", size=8.0)
-    add_bullet(document, "Validate missing-row meaning, current plan, product use, channel/CAC, margin, BTP definition, and permitted KYB use.", size=8.0)
+    add_bullet(document, "Randomise validated, unclosed, unactivated companies to improved onboarding versus business-as-usual; stratify by persona and initial plan.", size=8.0)
+    add_bullet(document, "Use 90-day cumulative revenue per validated company as the primary outcome; activation is the leading indicator.", size=8.0)
+    add_bullet(document, "Validate closure meaning, funnel eligibility, treatment cost, margin, product use, channel/CAC, and permitted KYB use.", size=8.0)
 
     p = document.add_paragraph()
     p.paragraph_format.space_before = Pt(3)
@@ -1166,28 +1177,42 @@ def build_page_six(document, health_chart, health_by_segment):
     latest_month = health_by_segment["observation_month"].max()
     overall = health_by_segment.loc[
         (health_by_segment["observation_month"] == latest_month)
-        & (health_by_segment["segment_level"] == "overall")
+        & (health_by_segment["segment_level"] == "mature_overall")
     ].copy()
     shares = dict(
         zip(overall["account_health_state"], overall["company_share_pct"])
     )
     comparable_companies = int(overall["companies"].sum())
     inactive_share = shares.get("At-risk", 0) + shares.get("Churned proxy", 0)
-
+    declining_share = (
+        shares.get("Declining - low exposure", 0)
+        + shares.get("Material Watch", 0)
+    )
     add_page_title(
         document,
         "Page 6 • Revenue-based account health",
-        "Health is broadly stable, but Business and several personas show fragility",
-        "Advanced method • Inputs limited to companies + revenue_with_total • May excluded",
+        "Separate inactivity from deterioration while an account is still producing revenue",
+        "Advanced method • All confirmed months, October–April • May excluded",
     )
     add_kpi_strip(
         document,
         [
-            (f"{shares.get('Healthy revenue account', 0):.1f}%", "Healthy in April"),
-            (f"{shares.get('Watch - revenue declining', 0):.1f}%", "Watch in April"),
+            (f"{shares.get('Healthy / stable', 0):.1f}%", "Healthy / stable in April"),
+            (f"{declining_share:.1f}%", "Declining in April"),
             (f"{inactive_share:.1f}%", "At-risk + churn proxy"),
             (f"{comparable_companies:,}", "comparable mature companies"),
         ],
+    )
+
+    p = document.add_paragraph()
+    p.paragraph_format.space_before = Pt(3)
+    p.paragraph_format.space_after = Pt(1)
+    add_run(p, "How to read it. ", bold=True, color=TEAL, size=8.0)
+    add_run(
+        p,
+        "At each month-end, the model first asks whether an activated company produced revenue. Active accounts are then separated by momentum and continuity; inactive accounts are separated by the length of the revenue gap. These are behavioural signals, not contractual customer statuses.",
+        color=BLACK,
+        size=8.0,
     )
 
     p = document.add_paragraph()
@@ -1208,12 +1233,12 @@ def build_page_six(document, health_chart, health_by_segment):
     add_cell_text(left, "Definitions", bold=True, color=TEAL, size=8.4)
     add_cell_text(
         left,
-        "Healthy: revenue-active, no earlier observed revenue gap, and no material decline. Watch: still active, but at least 30% and €10 below the prior three-month median.",
+        "Healthy/stable: active, sufficiently observed, no prior post-revenue gap, and less than 30% below baseline. Declining—low exposure: down 30%+ but less than €10. Material Watch: down 30%+ and €10+.",
         size=7.25,
     )
     add_cell_text(
         left,
-        "Recovered: active after an observed gap. At-risk: absent for 1–2 months. Churned proxy: absent for 3+ months. Never monetized: no revenue observed to date.",
+        "Building history: active but not yet assessable for momentum. Recovered: active after a post-revenue gap. At-risk: absent for 1–2 months. Churned proxy: absent for 3+ months. Never monetized: no revenue to date.",
         size=7.25,
         space_after=0,
     )
@@ -1227,7 +1252,7 @@ def build_page_six(document, health_chart, health_by_segment):
     )
     add_cell_text(
         right,
-        "Only February–April have three complete post-activation baseline months. The trend uses a fixed October cohort; the April cuts use all mature cohorts. Activation-month exposure is partial and initial plan may not be current.",
+        "All confirmed months are shown. Early snapshots naturally contain more Building-history accounts; momentum states only appear after enough complete history exists. The trend fixes the October cohort, while April segment cuts use mature companies. Initial plan may not be current.",
         size=7.25,
         space_after=0,
     )
@@ -1242,6 +1267,70 @@ def build_page_six(document, health_chart, health_by_segment):
         "sql/raw_two_table_health_analysis.sql — reads only companies and revenue_with_total",
         color=BLACK,
         size=7.6,
+    )
+
+
+def build_page_seven(document, funnel_heatmap_chart):
+    add_page_title(
+        document,
+        "Page 7 • Fair 90-day funnel",
+        "The largest quantifiable growth lever is post-KYB activation across the business",
+        "Simple method • Companies table only • May excluded",
+    )
+
+    p = document.add_paragraph()
+    p.paragraph_format.space_before = Pt(2)
+    p.paragraph_format.space_after = Pt(2)
+    add_run(p, "Method: ", bold=True, color=TEAL, size=8.1)
+    add_run(
+        p,
+        "include signups from 1 October 2025 through 30 January 2026, so every company has a complete 90-day observation window through April. Colours are relative within each segment column—not targets—and N<100 should be treated cautiously.",
+        color=BLACK,
+        size=8.1,
+    )
+
+    p = document.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(1)
+    p.paragraph_format.space_after = Pt(2)
+    p.add_run().add_picture(str(funnel_heatmap_chart), width=Cm(15.8))
+
+    table = document.add_table(rows=1, cols=2)
+    table.autofit = False
+    table.columns[0].width = Cm(9.1)
+    table.columns[1].width = Cm(9.1)
+    evidence, action = table.rows[0].cells
+    for cell in (evidence, action):
+        set_cell_margins(cell, top=80, start=105, bottom=80, end=105)
+
+    set_cell_shading(evidence, LIGHT_BLUE)
+    add_cell_text(evidence, "What the data shows", bold=True, color=TEAL, size=8.5)
+    add_cell_text(
+        evidence,
+        "Overall, 66.5% validate, 76.1% of validated companies activate within the same 90-day signup window, and 50.6% activate overall (N=22,033). Initial-plan order is stable: Start 54.7%, Plus 49.6%, Free 48.2%, and Business 32.7%.",
+        size=7.45,
+        space_after=0,
+    )
+
+    set_cell_shading(action, LIGHT_GREY)
+    add_cell_text(action, "What Shine should do", bold=True, color=NAVY, size=8.5)
+    add_cell_text(
+        action,
+        "A/B test improved onboarding for validated, unclosed, unactivated companies versus business-as-usual. Use 90-day cumulative revenue per validated company as the primary outcome. A hypothetical +5 pp persistent lift equals about 172 extra activations and €6.8k monthly revenue per matured cohort; this is a scenario, not a forecast.",
+        size=7.45,
+        space_after=0,
+    )
+    set_table_borders(table, color=WHITE, size="7")
+
+    p = document.add_paragraph()
+    p.paragraph_format.space_before = Pt(3)
+    p.paragraph_format.space_after = Pt(0)
+    add_run(p, "Reproducible SQL: ", bold=True, color=TEAL, size=7.7)
+    add_run(
+        p,
+        "sql/funnel_90d_heatmap_queries.sql • coloured copy: outputs/presentation/Colored_90_Day_Funnel_Queries.html",
+        color=BLACK,
+        size=7.7,
     )
 
 
@@ -1266,6 +1355,7 @@ def build_document():
     heatmap_chart = ASSET_DIR / "simple_raw_revenue_per_company_heatmap.png"
     plan_heatmap_chart = ASSET_DIR / "simple_raw_plan_revenue_per_company_heatmap.png"
     health_chart = ASSET_DIR / "raw_two_table_health_full_period.png"
+    funnel_heatmap_chart = ASSET_DIR / "simple_raw_funnel_90d_heatmap.jpg"
     make_segment_chart(cumulative_persona, cumulative_plan, chart)
     make_trend_decline_chart(monthly_revenue, decline, trend_decline_chart)
     make_revenue_per_company_heatmap(
@@ -1282,6 +1372,7 @@ def build_document():
         figure_height=4.7,
     )
     make_two_table_health_chart(health_by_segment, health_chart)
+    build_funnel_heatmap()
 
     document = Document()
     configure_document(document)
@@ -1312,6 +1403,8 @@ def build_document():
     build_page_five(document, plan_heatmap_chart)
     document.add_page_break()
     build_page_six(document, health_chart, health_by_segment)
+    document.add_page_break()
+    build_page_seven(document, funnel_heatmap_chart)
     document.save(OUTPUT_FILE)
     return OUTPUT_FILE
 

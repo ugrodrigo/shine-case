@@ -82,7 +82,13 @@ SELECT
              )
          AND b.trailing_3m_median_revenue - s.total_revenue >= (
                 SELECT minimum_eur_decline FROM account_health_parameters
-             ) THEN 'Declining'
+             ) THEN 'Material decline'
+        WHEN s.total_revenue <= b.trailing_3m_median_revenue * (
+                1 - (
+                    SELECT relative_decline_threshold
+                    FROM account_health_parameters
+                )
+             ) THEN 'Declining - low exposure'
         WHEN s.total_revenue >= b.trailing_3m_median_revenue * (
                 1 + (
                     SELECT relative_decline_threshold
@@ -127,11 +133,14 @@ SELECT
          AND m.revenue_momentum_state = 'Insufficient history'
             THEN 'Insufficient history'
         WHEN s.has_revenue_this_month
-         AND m.revenue_momentum_state = 'Declining'
-            THEN 'Watch - revenue declining'
+         AND m.revenue_momentum_state = 'Material decline'
+            THEN 'Material Watch'
+        WHEN s.has_revenue_this_month
+         AND m.revenue_momentum_state = 'Declining - low exposure'
+            THEN 'Declining - low exposure'
         WHEN s.has_revenue_this_month
          AND s.continuously_active_since_activation
-            THEN 'Healthy revenue account'
+            THEN 'Healthy / stable'
         WHEN s.has_revenue_this_month
             THEN 'Recovered / monitor'
         WHEN s.revenue_lifecycle_state = 'At-risk'
@@ -210,13 +219,14 @@ ORDER BY
     persona,
     initial_subscription_group,
     CASE account_health_state
-        WHEN 'Healthy revenue account' THEN 1
-        WHEN 'Watch - revenue declining' THEN 2
-        WHEN 'Recovered / monitor' THEN 3
-        WHEN 'Insufficient history' THEN 4
-        WHEN 'At-risk' THEN 5
-        WHEN 'Churned proxy' THEN 6
-        ELSE 7
+        WHEN 'Healthy / stable' THEN 1
+        WHEN 'Declining - low exposure' THEN 2
+        WHEN 'Material Watch' THEN 3
+        WHEN 'Recovered / monitor' THEN 4
+        WHEN 'Insufficient history' THEN 5
+        WHEN 'At-risk' THEN 6
+        WHEN 'Churned proxy' THEN 7
+        ELSE 8
     END;
 
 -- Immediate health of the cumulative top-20 revenue population. Historical
@@ -244,13 +254,14 @@ SELECT
     ) AS top_20pct_historical_revenue_share_pct
 FROM aggregated
 ORDER BY CASE account_health_state
-    WHEN 'Healthy revenue account' THEN 1
-    WHEN 'Watch - revenue declining' THEN 2
-    WHEN 'Recovered / monitor' THEN 3
-    WHEN 'Insufficient history' THEN 4
-    WHEN 'At-risk' THEN 5
-    WHEN 'Churned proxy' THEN 6
-    ELSE 7
+    WHEN 'Healthy / stable' THEN 1
+    WHEN 'Declining - low exposure' THEN 2
+    WHEN 'Material Watch' THEN 3
+    WHEN 'Recovered / monitor' THEN 4
+    WHEN 'Insufficient history' THEN 5
+    WHEN 'At-risk' THEN 6
+    WHEN 'Churned proxy' THEN 7
+    ELSE 8
 END;
 
 -- Threshold sensitivity: use this to show that the Watch result is not based
@@ -338,13 +349,13 @@ aggregated AS (
         END AS segment_level,
         COUNT(*) AS companies_with_sufficient_history,
         COUNT(*) FILTER (
-            WHERE account_health_state = 'Watch - revenue declining'
+            WHERE account_health_state = 'Material Watch'
         ) AS declining_companies,
         SUM(cutoff_month_revenue) FILTER (
-            WHERE account_health_state = 'Watch - revenue declining'
+            WHERE account_health_state = 'Material Watch'
         ) AS declining_companies_april_revenue,
         SUM(trailing_3m_median_revenue) FILTER (
-            WHERE account_health_state = 'Watch - revenue declining'
+            WHERE account_health_state = 'Material Watch'
         ) AS declining_companies_baseline_revenue
     FROM eligible
     GROUP BY GROUPING SETS (
@@ -476,11 +487,12 @@ ORDER BY
     persona,
     initial_subscription_group,
     CASE account_health_state
-        WHEN 'Healthy revenue account' THEN 1
-        WHEN 'Watch - revenue declining' THEN 2
-        WHEN 'Recovered / monitor' THEN 3
-        WHEN 'At-risk' THEN 4
-        WHEN 'Churned proxy' THEN 5
-        WHEN 'Never monetized' THEN 6
-        ELSE 7
+        WHEN 'Healthy / stable' THEN 1
+        WHEN 'Declining - low exposure' THEN 2
+        WHEN 'Material Watch' THEN 3
+        WHEN 'Recovered / monitor' THEN 4
+        WHEN 'At-risk' THEN 5
+        WHEN 'Churned proxy' THEN 6
+        WHEN 'Never monetized' THEN 7
+        ELSE 8
     END;

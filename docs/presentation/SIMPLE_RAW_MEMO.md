@@ -218,35 +218,43 @@ population and a limited share of total revenue.
 This page adds one advanced, self-contained analysis whose only source tables
 are `companies` and `revenue_with_total`. It builds the missing company-month
 calendar inside the query, calculates a rolling three-month revenue baseline,
-tracks prior gaps and inactivity, and assigns a revenue-health state at every
-reliable monthly snapshot.
+tracks prior gaps and inactivity, and assigns a revenue-health state for every
+confirmed monthly snapshot from October 2025 through April 2026.
+
+At each month-end, the model first asks whether an activated company produced
+revenue. Active accounts are then separated by momentum and continuity;
+inactive accounts are separated by the length of their revenue gap. These are
+behavioural signals, not contractual customer statuses.
 
 ### Definitions
 
-- **Healthy:** revenue-active, no earlier observed revenue gap, and no
-  material decline against the prior three-month median.
+- **Healthy:** revenue-active, has three complete post-activation baseline
+  months, has no prior post-revenue gap, and has no material decline against
+  its prior three-month median.
 - **Watch:** revenue-active, but at least 30% and EUR 10 below the prior
   three-month median.
-- **Recovered:** revenue-active after an earlier observed revenue gap.
+- **Active — building history:** revenue-active but does not yet have the three
+  complete baseline months required for a Healthy/Watch momentum assessment.
+- **Recovered:** revenue-active after a gap that occurred after first revenue.
 - **At-risk:** previously monetized and absent for one or two months.
 - **Churned proxy:** previously monetized and absent for at least three months.
 - **Never monetized:** no revenue observed to date in the extract.
 
 ### Comparison design
 
-- The February-April trend uses the fixed 1,196-company October activation
+- The October-April trend uses the fixed 1,196-company October activation
   cohort. This prevents the trend from changing merely because newer cohorts
-  become eligible later.
+  enter later.
 - The April persona and initial-plan views use all 6,337 companies activated by
   December 2025. Every company therefore has three complete post-activation
   months available for the momentum baseline.
-- October-January are not classified in the trend because no company has three
-  complete post-activation baseline months within the extract. May remains
-  excluded because it is provisional.
+- October-January are shown as part of the lifecycle, but revenue-active
+  companies are labelled Building history rather than Healthy or Watch until
+  the required baseline exists. May remains excluded because it is provisional.
 
 ### April snapshot
 
-- Healthy: **74.72%**.
+- Healthy: **74.77%**.
 - Watch: **10.62%**.
 - At-risk plus Churned proxy: **12.91%**.
 - Business is the clearest initial-plan warning: only **46.15% Healthy** and
